@@ -1263,8 +1263,8 @@ const App = () => {
   const [permit, setPermit] = useState(MOCK.permit);
 
   useEffect(() => {
-    const savedUrl = localStorage.getItem('erp_supabase_url');
-    const savedKey = localStorage.getItem('erp_supabase_key');
+    const savedUrl = localStorage.getItem('erp_supabase_url') || SUPABASE_URL;
+    const savedKey = localStorage.getItem('erp_supabase_key') || SUPABASE_ANON_KEY;
     if (savedUrl && savedKey) {
       window.__SUPABASE_URL__ = savedUrl;
       window.__SUPABASE_ANON_KEY__ = savedKey;
