@@ -35,8 +35,8 @@ const { useState, useEffect, useCallback, useMemo } = React;
 // ============================================================
 // SUPABASE CLIENT
 // ============================================================
-const SUPABASE_URL = typeof window !== 'undefined' && window.__SUPABASE_URL__ ? window.__SUPABASE_URL__ : '';
-const SUPABASE_ANON_KEY = typeof window !== 'undefined' && window.__SUPABASE_ANON_KEY__ ? window.__SUPABASE_ANON_KEY__ : '';
+const SUPABASE_URL = typeof window !== 'undefined' && window.__SUPABASE_URL__ ? window.__SUPABASE_URL__ : 'https://xmzsszuteyuumspyzsaq.supabase.co';
+const SUPABASE_ANON_KEY = typeof window !== 'undefined' && window.__SUPABASE_ANON_KEY__ ? window.__SUPABASE_ANON_KEY__ : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0enNzenV0ZXl1dW1zcHl6c2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTM3MTYsImV4cCI6MjA2MDk2OTcxNn0.Jz3MmPuJZ0J7YqG0QzPzMfRMhQJCpTGJfCFe6bVa2IM';
 
 const supabase = {
   _headers: () => ({
@@ -1263,8 +1263,8 @@ const App = () => {
   const [permit, setPermit] = useState(MOCK.permit);
 
   useEffect(() => {
-    const savedUrl = localStorage.getItem('erp_supabase_url');
-    const savedKey = localStorage.getItem('erp_supabase_key');
+    const savedUrl = localStorage.getItem('erp_supabase_url') || 'https://xmzsszuteyuumspyzsaq.supabase.co';
+    const savedKey = localStorage.getItem('erp_supabase_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0enNzenV0ZXl1dW1zcHl6c2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTM3MTYsImV4cCI6MjA2MDk2OTcxNn0.Jz3MmPuJZ0J7YqG0QzPzMfRMhQJCpTGJfCFe6bVa2IM';
     if (savedUrl && savedKey) {
       window.__SUPABASE_URL__ = savedUrl;
       window.__SUPABASE_ANON_KEY__ = savedKey;
