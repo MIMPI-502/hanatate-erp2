@@ -218,7 +218,7 @@ const AuditPage=({pools,deaths,medicines,shipping,water,haccp})=>{
   </div>;
 };
 
-const NAV=[["dashboard","📊","ダッシュボード"],["stock","🐟","池入れ・在鰻"],["shipping","📦","出荷"],["feeding","🌾","給餌"],["processing","🏭","加工"],["water","💧","水質"],["deaths","📉","死魚"],["medicine","💊","薬品"],["haccp","✅","HACCP"],["finance","💴","財務"],["permit","📋","許可枠"],["subsidy","🏛","補助金"],["audit","🔍","監査"]];
+const NAV=[["dashboard","📊","ダッシュボード"],["stock","🐟","池入れ・在鰻"],["shipping","📦","出荷"],["feeding","🌾","給餌"],["processing","🏭","加工"],["water","💧","水質"],["deaths","📉","死魚"],["medicine","💊","薬品"],["haccp","✅","HACCP"],["finance","💴","財務"],["permit","📋","許可枠"],["audit","🔍","監査"]];
 
 const App=()=>{
   const [pg,setPg]=useState("dashboard");
@@ -319,11 +319,7 @@ const App=()=>{
         </div>
       );})}
     </div>,
-    subsidy:<ListPage title="補助金管理" icon="🏛"
-      cols={[{k:"name",l:"補助金名"},{k:"equipment",l:"対象設備"},{k:"amount",l:"金額",r:v=>"¥"+fmt(v)},{k:"status",l:"状態",r:v=><Bdg c={v==="completed"?"g":v==="rejected"?"r":"y"}>{v==="completed"?"受給済":v==="rejected"?"却下":"申請中"}</Bdg>}]}
-      rows={subsidies} form={{name:"",equipment:"",amount:"",order_date:td(),status:"pending"}}
-      setForm={()=>{}} fields={[{k:"name",l:"補助金名",ph:"令和◯年度 水産業強化補助金"},{k:"equipment",l:"対象設備"},{k:"amount",l:"金額",type:"number"},{k:"order_date",l:"発注日",type:"date"},{k:"status",l:"状態",type:"select",opts:["pending","applied","completed","rejected"]}]}
-      onSave={async()=>{}} stats={`合計¥${fmt(subsidies.reduce((s,r)=>s+(r.amount||0),0))}`}/>,
+
     audit:<AuditPage pools={pools} deaths={deaths} medicines={medicines} shipping={shipping} water={water} haccp={haccp}/>,
   };
 
