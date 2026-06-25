@@ -66,29 +66,46 @@ const POOLS=[{id:"P01",name:"第1池",cap:10000,cur:8200,kg:820,st:"normal"},{id
 
 
 const DeathInput=({poolId,poolName,deaths,setDeaths})=>{
+  const [date,setDate]=useState(td());
   const [count,setCount]=useState("");
   const [cause,setCause]=useState("原因不明");
   const [show,setShow]=useState(false);
-  const [toast,setToast]=useState("");
+  const [saved,setSaved]=useState(false);
   const save=async()=>{
     if(!count)return;
-    const row={date:td(),pool_id:poolId,count:Number(count),cause,staff:"",memo:""};
+    const row={date,pool_id:poolId,count:Number(count),cause,staff:"",memo:""};
     setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);
     await db.ins("erp_deaths",row);
-    setCount("");setShow(false);
-    setToast("✅ 記録しました");setTimeout(()=>setToast(""),2000);
+    setCount("");setSaved(true);setTimeout(()=>setSaved(false),2000);
   };
+  const todayCount=deaths.filter(d=>d.pool_id===poolId&&d.date===td()).reduce((s,d)=>s+(d.count||0),0);
+  const monthCount=deaths.filter(d=>d.pool_id===poolId&&d.date&&d.date.slice(0,7)===td().slice(0,7)).reduce((s,d)=>s+(d.count||0),0);
+  const totalCount=deaths.filter(d=>d.pool_id===poolId).reduce((s,d)=>s+(d.count||0),0);
   return <div>
-    {toast&&<div className="toast" style={{background:"#2ecc71",color:"#0a0f0d"}}>{toast}</div>}
-    {!show?<button onClick={()=>setShow(true)} style={{width:"100%",padding:"5px",background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:6,color:"#e74c3c",fontSize:11,cursor:"pointer",fontWeight:700}}>＋ 死鰻記録</button>
-    :<div style={{display:"flex",gap:6,alignItems:"center"}}>
-      <input className="inp" type="number" value={count} onChange={e=>setCount(e.target.value)} placeholder="尾数" style={{width:70,padding:"4px 8px",fontSize:12}}/>
-      <select className="inp" value={cause} onChange={e=>setCause(e.target.value)} style={{flex:1,padding:"4px 8px",fontSize:11}}>
-        <option>原因不明</option><option>水質悪化</option><option>疾病</option><option>酸欠</option><option>その他</option>
-      </select>
-      <button onClick={save} style={{padding:"4px 10px",background:"#e74c3c",border:"none",borderRadius:6,color:"#fff",fontSize:11,cursor:"pointer",fontWeight:700}}>記録</button>
-      <button onClick={()=>setShow(false)} style={{padding:"4px 8px",background:"none",border:"1px solid #1e3326",borderRadius:6,color:"#7aa885",fontSize:11,cursor:"pointer"}}>✕</button>
-    </div>}
+    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:6}}>
+      <span style={{color:"#e74c3c"}}>本日: <strong>{fmt(todayCount)}</strong>尾</span>
+      <span style={{color:"#f0a500"}}>今月: <strong>{fmt(monthCount)}</strong>尾</span>
+      <span style={{color:"#4a7055"}}>累計: {fmt(totalCount)}尾</span>
+    </div>
+    {saved&&<div style={{textAlign:"center",color:"#2ecc71",fontSize:11,marginBottom:4}}>✅ 記録しました</div>}
+    {!show
+      ?<button onClick={()=>setShow(true)} style={{width:"100%",padding:"5px",background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:6,color:"#e74c3c",fontSize:11,cursor:"pointer",fontWeight:700}}>＋ 死鰻を記録する</button>
+      :<div>
+        <div style={{display:"flex",gap:6,marginBottom:6}}>
+          <input className="inp" type="date" value={date} onChange={e=>setDate(e.target.value)} style={{flex:1,padding:"5px 8px",fontSize:12}}/>
+        </div>
+        <div style={{display:"flex",gap:6,alignItems:"center"}}>
+          <input className="inp" type="number" value={count} onChange={e=>setCount(e.target.value)} placeholder="死鰻数(尾)" style={{width:90,padding:"5px 8px",fontSize:12}}/>
+          <select className="inp" value={cause} onChange={e=>setCause(e.target.value)} style={{flex:1,padding:"5px 8px",fontSize:11}}>
+            <option>原因不明</option><option>水質悪化</option><option>疾病</option><option>酸欠</option><option>その他</option>
+          </select>
+        </div>
+        <div style={{display:"flex",gap:6,marginTop:6}}>
+          <button onClick={save} style={{flex:1,padding:"6px",background:"#e74c3c",border:"none",borderRadius:6,color:"#fff",fontSize:12,cursor:"pointer",fontWeight:700}}>記録する</button>
+          <button onClick={()=>setShow(false)} style={{padding:"6px 10px",background:"none",border:"1px solid #1e3326",borderRadius:6,color:"#7aa885",fontSize:11,cursor:"pointer"}}>閉じる</button>
+        </div>
+      </div>
+    }
   </div>;
 };
 const Toast=({m,t="ok"})=>m?<div className="toast" style={{background:t==="ok"?"#2ecc71":"#e74c3c",color:"#0a0f0d"}}>{m}</div>:null;
