@@ -146,52 +146,6 @@ const ListPage=({title,icon,cols,rows,form,setForm,fields,onSave,stats})=>{
   </div>;
 };
 
-// 財務
-const FinancePage=({finance,setFinance})=>{
-  const [tab,setTab]=useState("all");
-  const [form,setForm]=useState({date:td(),type:"income",category:"卸売",amount:"",description:"",memo:""});
-  const [toast,setToast]=useState("");
-  const inc=finance.filter(f=>f.type==="income").reduce((s,f)=>s+(f.amount||0),0);
-  const exp=finance.filter(f=>f.type==="expense").reduce((s,f)=>s+(f.amount||0),0);
-  const rows=tab==="all"?finance:finance.filter(f=>f.type===tab);
-  const save=async()=>{
-    const row={...form,amount:Number(form.amount)};
-    setFinance(p=>[{...row,id:"F"+Date.now()},... p]);
-    await db.ins("erp_finance",row);
-    setToast("✅ 保存");setTimeout(()=>setToast(""),2500);
-  };
-  return <div>
-    <Toast m={toast}/>
-    <SH title="💴 財務管理" action={<button className="btn btn-p" onClick={save} style={{padding:"8px 16px"}}>＋ 記録追加</button>}/>
-    <div className="gridStat" style={{marginBottom:20}}>
-      {[["売上",inc,"#2ecc71"],["支出",exp,"#e74c3c"],["利益",inc-exp,inc-exp>=0?"#d4af37":"#e74c3c"]].map(([l,v,c])=>(
-        <div className="stat" key={l}><div style={{fontSize:11,color:"#7aa885",marginBottom:4}}>{l}</div><div style={{fontSize:20,fontWeight:800,color:c,fontFamily:"monospace"}}>¥{fmt(v)}</div></div>
-      ))}
-    </div>
-    <div className="card">
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:16}}>
-        {[["all","全て"],["income","収入"],["expense","支出"]].map(([v,l])=>(
-          <button key={v} onClick={()=>setTab(v)} style={{padding:"6px",borderRadius:8,fontWeight:700,fontSize:12,background:tab===v?"#2ecc71":"#162019",color:tab===v?"#0a0f0d":"#7aa885",border:`1px solid ${tab===v?"#2ecc71":"#1e3326"}`,cursor:"pointer"}}>{l}</button>
-        ))}
-      </div>
-      <Tbl cols={[
-        {k:"date",l:"日付"},{k:"type",l:"区分",r:v=><Bdg c={v==="income"?"g":"r"}>{v==="income"?"収入":"支出"}</Bdg>},
-        {k:"category",l:"カテゴリ"},{k:"amount",l:"金額",r:v=>"¥"+fmt(v)},{k:"description",l:"内容"}
-      ]} rows={rows}/>
-    </div>
-    <div className="card" style={{marginTop:16}}>
-      <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>新規入力</div>
-      <div className="grid2"><Fld l="日付"><Inp type="date" v={form.date} on={e=>setForm({...form,date:e.target.value})}/></Fld>
-      <Fld l="区分"><Sel v={form.type} on={e=>setForm({...form,type:e.target.value})}><option value="income">収入</option><option value="expense">支出</option></Sel></Fld></div>
-      <div className="grid2"><Fld l="カテゴリ"><Sel v={form.category} on={e=>setForm({...form,category:e.target.value})}>
-        {(form.type==="income"?["卸売","EC販売","ふるさと納税","その他"]:["飼料費","種苗費","光熱費","人件費","薬品費","設備費","その他"]).map(o=><option key={o}>{o}</option>)}
-      </Sel></Fld><Fld l="金額(¥)"><Inp type="number" v={form.amount} on={e=>setForm({...form,amount:e.target.value})}/></Fld></div>
-      <Fld l="内容"><Inp v={form.description} on={e=>setForm({...form,description:e.target.value})}/></Fld>
-      <Btn onClick={save}>保存</Btn>
-    </div>
-  </div>;
-};
-
 // 監査
 const AuditPage=({pools,deaths,medicines,shipping,water,haccp})=>{
   const [mon,setMon]=useState(td().slice(0,7));
@@ -218,7 +172,7 @@ const AuditPage=({pools,deaths,medicines,shipping,water,haccp})=>{
   </div>;
 };
 
-const NAV=[["dashboard","📊","ダッシュボード"],["stock","🐟","池入れ・在鰻"],["shipping","📦","出荷"],["feeding","🌾","給餌"],["processing","🏭","加工"],["water","💧","水質"],["deaths","📉","死魚"],["medicine","💊","薬品"],["haccp","✅","HACCP"],["finance","💴","財務"],["permit","📋","許可枠"],["audit","🔍","監査"]];
+const NAV=[["dashboard","📊","ダッシュボード"],["stock","🐟","池入れ・在鰻"],["shipping","📦","出荷"],["feeding","🌾","給餌"],["processing","🏭","加工"],["water","💧","水質"],["deaths","📉","死魚"],["medicine","💊","薬品"],["haccp","✅","HACCP"],["permit","📋","許可枠"],["audit","🔍","監査"]];
 
 const App=()=>{
   const [pg,setPg]=useState("dashboard");
@@ -232,22 +186,20 @@ const App=()=>{
   const [medicines,setMed]=useState([]);
   const [processing,setProc]=useState([]);
   const [haccp,setHaccp]=useState([]);
-  const [finance,setFinance]=useState([]);
-  const [subsidies,setSub]=useState([]);
   const [permit]=useState([{id:"PM1",number:"FKO-2026-0042",year:2026,annual:50000,used:32000,expiry:"2027-03-31"}]);
 
   useEffect(()=>{
     Promise.all([
       db.get("erp_pools"),db.get("erp_stock_in"),db.get("erp_shipping"),db.get("erp_feeding"),
       db.get("erp_water_quality"),db.get("erp_deaths"),db.get("erp_medicines"),db.get("erp_processing"),
-      db.get("erp_haccp"),db.get("erp_finance"),db.get("erp_subsidies")
+      db.get("erp_haccp"),Promise.resolve([]),Promise.resolve([])
     ]).then(([p,si,sh,fe,wa,de,me,pr,ha,fi,sb])=>{
       if(p&&p.length)setPools(p);
       if(si&&si.length)setSI(si);if(sh&&sh.length)setShipping(sh);
       if(fe&&fe.length)setFeeding(fe);if(wa&&wa.length)setWater(wa);
       if(de&&de.length)setDeaths(de);if(me&&me.length)setMed(me);
       if(pr&&pr.length)setProc(pr);if(ha&&ha.length)setHaccp(ha);
-      if(fi&&fi.length)setFinance(fi);if(sb&&sb.length)setSub(sb);
+      
     }).catch(e=>console.log(e)).finally(()=>setLoading(false));
   },[]);
 
@@ -256,7 +208,7 @@ const App=()=>{
   const pName=id=>(pools.find(p=>p.id===id)||{}).name||id;
 
   const pages={
-    dashboard:<Dashboard pools={pools} shipping={shipping} deaths={deaths} finance={finance} setPage={setPg}/>,
+    dashboard:<Dashboard pools={pools} shipping={shipping} deaths={deaths} finance={[]} setPage={setPg}/>,
     stock:<ListPage title="池入れ・在鰻管理" icon="🐟"
       cols={[{k:"date",l:"日付"},{k:"supplier",l:"仕入先"},{k:"pool_id",l:"池",r:pName},{k:"lot",l:"ロット"},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"staff",l:"担当"}]}
       rows={stockIn} form={{date:td(),supplier:"",pool_id:"P01",lot:"",qty:"",kg:"",avg_size:"",staff:""}}
@@ -297,7 +249,6 @@ const App=()=>{
       rows={haccp} form={{date:td(),check_type:"入荷検品",result:"合格",staff:"",memo:""}}
       setForm={()=>{}} fields={[{k:"date",l:"日付",type:"date"},{k:"check_type",l:"点検種別",type:"select",opts:["入荷検品","温度管理","衛生点検","設備点検","加工工程","出荷検品","その他"]},{k:"result",l:"結果",type:"select",opts:["合格","要改善","不合格"]},{k:"staff",l:"担当者"},{k:"memo",l:"メモ",type:"textarea"}]}
       onSave={async()=>{}} stats="HACCP記録"/>,
-    finance:<FinancePage finance={finance} setFinance={setFinance}/>,
     permit:<div>
       <SH title="📋 許可枠管理"/>
       {permit.map(p=>{const pct=Math.round(p.used/p.annual*100);return(
