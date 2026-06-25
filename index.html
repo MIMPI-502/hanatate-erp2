@@ -65,6 +65,40 @@ const fd=d=>d?d.slice(0,10):"—";
 const POOLS=[{id:"P01",name:"第1池",cap:10000,cur:8200,kg:820,st:"normal"},{id:"P02",name:"第2池",cap:10000,cur:7500,kg:750,st:"normal"},{id:"P03",name:"第3池",cap:8000,cur:6100,kg:610,st:"warning"},{id:"P04",name:"第4池",cap:10000,cur:7000,kg:700,st:"normal"},{id:"P05",name:"第5池",cap:10000,cur:6500,kg:650,st:"normal"},{id:"P06",name:"第6池",cap:8000,cur:5800,kg:580,st:"normal"},{id:"P07",name:"第7池",cap:8000,cur:4200,kg:420,st:"normal"},{id:"P08",name:"第8池",cap:5000,cur:4200,kg:420,st:"normal"},{id:"P09",name:"第9池",cap:5000,cur:3800,kg:380,st:"normal"},{id:"P10",name:"第10池",cap:12000,cur:9800,kg:980,st:"normal"},{id:"P11",name:"鹿児島委託池①",cap:10000,cur:0,kg:0,st:"normal"},{id:"P12",name:"鹿児島委託池②",cap:10000,cur:0,kg:0,st:"normal"},{id:"P13",name:"鹿児島委託池③",cap:10000,cur:0,kg:0,st:"normal"}];
 
 
+
+const PoolEdit=({pool,setPools})=>{
+  const [show,setShow]=useState(false);
+  const [cur,setCur]=useState(pool.cur||pool.current||0);
+  const [kg,setKg]=useState(pool.kg||pool.weight||0);
+  const [cap,setCap]=useState(pool.cap||pool.capacity||0);
+  const [saved,setSaved]=useState(false);
+  const save=async()=>{
+    setPools(prev=>prev.map(p=>p.id===pool.id?{...p,cur:Number(cur),kg:Number(kg),cap:Number(cap)}:p));
+    await db.ins("erp_pools",{id:pool.id,name:pool.name,current:Number(cur),weight:Number(kg),capacity:Number(cap),status:pool.st||pool.status||"normal"});
+    setShow(false);setSaved(true);setTimeout(()=>setSaved(false),2000);
+  };
+  return <div style={{marginBottom:8}}>
+    {saved&&<div style={{textAlign:"center",color:"#2ecc71",fontSize:11,marginBottom:4}}>✅ 更新しました</div>}
+    {!show
+      ?<button onClick={()=>setShow(true)} style={{width:"100%",padding:"4px",background:"rgba(46,204,113,0.08)",border:"1px solid rgba(46,204,113,0.2)",borderRadius:6,color:"#2ecc71",fontSize:11,cursor:"pointer"}}>✏️ 在鰻数・kg・容量を編集</button>
+      :<div style={{background:"rgba(46,204,113,0.05)",border:"1px solid rgba(46,204,113,0.2)",borderRadius:8,padding:"10px"}}>
+        <div style={{fontSize:11,color:"#7aa885",marginBottom:8,fontWeight:700}}>池データ編集</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
+          <div><div style={{fontSize:10,color:"#7aa885",marginBottom:3}}>在鰻数(尾)</div>
+            <input className="inp" type="number" value={cur} onChange={e=>setCur(e.target.value)} style={{padding:"5px 8px",fontSize:13,fontWeight:700}}/></div>
+          <div><div style={{fontSize:10,color:"#7aa885",marginBottom:3}}>重量(kg)</div>
+            <input className="inp" type="number" value={kg} onChange={e=>setKg(e.target.value)} style={{padding:"5px 8px",fontSize:13}}/></div>
+          <div><div style={{fontSize:10,color:"#7aa885",marginBottom:3}}>容量(尾)</div>
+            <input className="inp" type="number" value={cap} onChange={e=>setCap(e.target.value)} style={{padding:"5px 8px",fontSize:13}}/></div>
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          <button onClick={save} style={{flex:1,padding:"6px",background:"#2ecc71",border:"none",borderRadius:6,color:"#0a0f0d",fontSize:12,cursor:"pointer",fontWeight:700}}>保存する</button>
+          <button onClick={()=>setShow(false)} style={{padding:"6px 10px",background:"none",border:"1px solid #1e3326",borderRadius:6,color:"#7aa885",fontSize:11,cursor:"pointer"}}>閉じる</button>
+        </div>
+      </div>
+    }
+  </div>;
+};
 const DeathInput=({poolId,poolName,deaths,setDeaths})=>{
   const [date,setDate]=useState(td());
   const [count,setCount]=useState("");
@@ -133,7 +167,7 @@ const SH=({title,sub,action})=>(
 );
 
 // ダッシュボード
-const Dashboard=({pools,shipping,deaths,setDeaths,finance,setPage})=>{
+const Dashboard=({pools,setPools,shipping,deaths,setDeaths,finance,setPage})=>{
   return <div>
     <SH title="ダッシュボード" sub={td()+" 現在"}/>
     <div className="gridStat">
@@ -163,6 +197,7 @@ const Dashboard=({pools,shipping,deaths,setDeaths,finance,setPage})=>{
           <div className="prog"><div className="prog-bar" style={{width:`${Math.min(pct,100)}%`,background:pct>90?"#e74c3c":warn?"#f0a500":"#2ecc71"}}/></div>
           <div style={{fontSize:10,color:"#4a7055",marginTop:3}}>{pct}%</div>
           <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid #1e3326"}}>
+            <PoolEdit pool={p} setPools={setPools}/>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
               <span style={{fontSize:11,color:"#e74c3c"}}>📉 今月死鰻: {fmt(deaths.filter(d=>d.pool_id===p.id&&d.date&&d.date.slice(0,7)===td().slice(0,7)).reduce((s,d)=>s+(d.count||0),0))}尾</span>
               <span style={{fontSize:10,color:"#4a7055"}}>累計: {fmt(deaths.filter(d=>d.pool_id===p.id).reduce((s,d)=>s+(d.count||0),0))}尾</span>
