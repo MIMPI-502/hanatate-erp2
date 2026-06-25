@@ -4,28 +4,12 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>花立山養鰻 統合ERPシステム v2</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet"/>
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0;}
-body{background:#0a0f0d;color:#e8f5ec;font-family:'Noto Sans JP',sans-serif;}
-</style>
 </head>
-<body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState } = React;
-const App = () => {
-  const [msg] = useState("🐟 花立山養鰻 ERP v2 起動確認OK");
-  return (
-    <div style={{padding:40, fontSize:20, color:"#2ecc71"}}>
-      {msg}
-    </div>
-  );
-};
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+<body style="background:#0a0f0d;color:#2ecc71;font-family:sans-serif;padding:40px;">
+<h1>🐟 花立山養鰻 ERP v2</h1>
+<p>表示テスト成功</p>
+<script>
+document.body.innerHTML += '<p style="color:#7aa885">JavaScript動作確認: OK</p>';
 </script>
 </body>
 </html>
