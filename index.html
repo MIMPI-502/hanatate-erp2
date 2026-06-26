@@ -1,4 +1,32 @@
- <!DOCTYPE html>
+const ListPage=({title,icon,cols,rows,form,setForm,fields,onSave,onDelete,onUpdate,stats,poolOpts})=>{
+  const resolveField=f=>f.isPool?{...f,type:"select",opts:poolOpts||f.opts}:f;
+  const [show,setShow]=useState(false);
+  const [editRow,setEditRow]=useState(null);
+  const [filter,setFilter]=useState("");
+  const [toast,setToast]=useState("");
+  const t=(m)=>{setToast(m);setTimeout(()=>setToast(""),2500);};
+  const save=async()=>{
+    if(editRow&&onUpdate){await onUpdate(editRow.id,form);}
+    else{await onSave();}
+    setEditRow(null);setShow(false);t("✅ 保存しました");
+  };
+  const handleDelete=async(r)=>{if(onDelete){const ok=await onDelete(r);if(ok)t("🗑️ 削除しました");}};
+  const handleEdit=(r)=>{setEditRow(r);setForm({...r});setShow(true);};
+  const filtered=filter?rows.filter(r=>Object.values(r).some(v=>String(v||"").includes(filter))):rows;
+  return <div>
+    <Toast m={toast}/>
+    <SH title={icon+" "+title} sub={stats} action={<Btn onClick={()=>{setEditRow(null);setShow(true);}}>+ 新規登録</Btn>}/>
+    <div style={{padding:"0 0 8px"}}><input className="inp" value={filter} onChange={e=>setFilter(e.target.value)} placeholder="絞り込み（日付・池名など）" style={{width:"100%",boxSizing:"border-box",fontSize:13}}/></div>
+    <div className="card"><Tbl cols={cols} rows={filtered} onDelete={onDelete?handleDelete:undefined} onEdit={handleEdit}/></div>
+    {show&&<Modal title={editRow?title+"編集":title+"登録"} onClose={()=>{setShow(false);setEditRow(null);}}>
+      {fields.map(f=>{const rf=resolveField(f);return <Fld key={rf.k} l={rf.l}>{rf.type==="select"?<Sel v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}>{(rf.opts||[]).map(o=><option key={o} value={o}>{o}</option>)}</Sel>:rf.type==="textarea"?<Txa v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}/>:<Inp type={rf.type||"text"} step={rf.step} v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})} ph={rf.ph}/>}</Fld>;})}
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:8}}>
+        <Btn c="g" onClick={()=>{setShow(false);setEditRow(null);}}>キャンセル</Btn>
+        <Btn onClick={save}>{editRow?"更新":"保存"}</Btn>
+      </div>
+    </Modal>}
+  </div>;
+} <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -65,6 +93,7 @@ const db={
     if(!r.ok){const e=await r.text();console.error("ups error",t,r.status,e);return {ok:false,err:e};}
     return {ok:true};
   },
+  patch:async(t,id,d)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",headers:{...H,Prefer:"return=minimal"},body:JSON.stringify(d)});return r.ok;},
 };
 const fmt=n=>n!=null?Number(n).toLocaleString():"—";
 const td=()=>new Date().toISOString().slice(0,10);
@@ -222,9 +251,9 @@ const Sel=({v,on,children})=><select className="inp" value={v} onChange={on}>{ch
 const Txa=({v,on,rows=3})=><textarea className="inp" value={v} onChange={on} rows={rows} style={{resize:"vertical"}}/>;
 const Fld=({l,children})=><div className="fld"><label className="lbl">{l}</label>{children}</div>;
 const Bdg=({c,children})=><span className={`badge b${c}`}>{children}</span>;
-const Tbl=({cols,rows,empty="データなし"})=>(
-  <div style={{overflowX:"auto"}}><table className="tbl"><thead><tr>{cols.map(c=><th key={c.k}>{c.l}</th>)}</tr></thead>
-  <tbody>{rows.length===0?<tr><td colSpan={cols.length} style={{padding:20,textAlign:"center",color:"#4a7055"}}>{empty}</td></tr>:rows.map((r,i)=><tr key={i} style={{color:"#e8f5ec"}}>{cols.map(c=><td key={c.k}>{c.r?c.r(r[c.k],r):r[c.k]??"—"}</td>)}</tr>)}</tbody>
+const Tbl=({cols,rows,empty="データなし",onDelete,onEdit})=>(
+  <div style={{overflowX:"auto"}}><table className="tbl"><thead><tr>{cols.map(c=><th key={c.k}>{c.l}</th>)}{(onDelete||onEdit)&&<th>操作</th>}</tr></thead>
+  <tbody>{rows.length===0?<tr><td colSpan={cols.length+((onDelete||onEdit)?1:0)} style={{padding:20,textAlign:"center",color:"#4a7055"}}>{empty}</td></tr>:rows.map((r,i)=><tr key={i} style={{color:"#e8f5ec"}}>{cols.map(c=><td key={c.k}>{c.r?c.r(r[c.k],r):r[c.k]??"—"}</td>)}{(onDelete||onEdit)&&<td style={{whiteSpace:"nowrap"}}>{onEdit&&<button onClick={()=>onEdit(r)} style={{marginRight:4,padding:"4px 8px",background:"rgba(52,152,219,0.2)",border:"1px solid rgba(52,152,219,0.4)",borderRadius:4,color:"#3498db",fontSize:11,cursor:"pointer"}}>✏️</button>}{onDelete&&r.id&&<button onClick={()=>{if(window.confirm("削除しますか？"))onDelete(r);}} style={{padding:"4px 8px",background:"rgba(231,76,60,0.2)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:4,color:"#e74c3c",fontSize:11,cursor:"pointer"}}>🗑️</button>}</td>}</tr>)}</tbody>
   </table></div>
 );
 const Modal=({title,onClose,children,wide})=>(
@@ -239,10 +268,68 @@ const SH=({title,sub,action})=>(
   <div className="sec-h"><div><div style={{fontSize:16,fontWeight:800}}>{title}</div>{sub&&<div style={{fontSize:11,color:"#7aa885",marginTop:2}}>{sub}</div>}</div>{action}</div>
 );
 
+// 水質アラート
+const WaterAlert=({water})=>{
+  const today=water.filter(w=>w.date===td());
+  const alerts=[];
+  today.forEach(w=>{
+    if(w.temp&&(Number(w.temp)<20||Number(w.temp)>32))alerts.push(w.pool_id+" 水温異常: "+w.temp+"C");
+    if(w.ph&&(Number(w.ph)<6.5||Number(w.ph)>8.5))alerts.push(w.pool_id+" pH異常: "+w.ph);
+    if(w.nh3&&Number(w.nh3)>0.5)alerts.push(w.pool_id+" NH3高値: "+w.nh3);
+    if(w.do_level&&Number(w.do_level)<5)alerts.push(w.pool_id+" DO低値: "+w.do_level+"mg/L");
+  });
+  if(alerts.length===0)return null;
+  return <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:8,padding:12,marginBottom:12}}>
+    <div style={{fontWeight:700,color:"#e74c3c",marginBottom:6,fontSize:13}}>水質アラート（本日）</div>
+    {alerts.map(function(a,i){return <div key={i} style={{fontSize:12,color:"#e74c3c",padding:"2px 0"}}>{a}</div>;})}
+  </div>;
+};
+// 許可枠管理
+const PermitPage=({permit,setPermit})=>{
+  const [show,setShow]=useState(false);
+  const [form,setForm]=useState({number:"",year:2026,annual:"",used:"",expiry:""});
+  const [toast,setToast]=useState("");
+  const t=(m)=>{setToast(m);setTimeout(()=>setToast(""),2500);};
+  const p=permit[0]||{};
+  const pct=p.annual?Math.round((p.used||0)/p.annual*100):0;
+  const save=async()=>{
+    const up={...p,...form,annual:Number(form.annual||p.annual),used:Number(form.used||p.used),year:Number(form.year||p.year)};
+    await db.ups("erp_permit",up);setPermit([up]);setShow(false);t("保存しました");
+  };
+  return <div>
+    <Toast m={toast}/>
+    <SH title="許可枠管理" action={<Btn onClick={()=>{setForm({number:p.number||"",year:p.year||2026,annual:p.annual||"",used:p.used||"",expiry:p.expiry||""});setShow(true);}}>編集</Btn>}/>
+    <div className="gridStat">
+      {[["許可番号",p.number||"—","#2ecc71"],["年度",(p.year||"—")+"年度","#2ecc71"],["年間許可",fmt(p.annual||0)+"尾","#2ecc71"],["使用済",fmt(p.used||0)+"尾","#f0a500"],["残枠",fmt((p.annual||0)-(p.used||0))+"尾","#2ecc71"],["期限",fd(p.expiry)||"—","#d4af37"]].map(function(item){return(
+        <div className="stat" key={item[0]}><div style={{fontSize:10,color:"#7aa885",marginBottom:4}}>{item[0]}</div><div style={{fontSize:16,fontWeight:800,color:item[2]}}>{item[1]}</div></div>
+      );})}
+    </div>
+    <div className="card">
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+        <span style={{fontSize:12,color:"#7aa885"}}>許可枠使用率</span>
+        <span style={{fontWeight:700,color:pct>80?"#f0a500":"#2ecc71"}}>{pct}%</span>
+      </div>
+      <div className="prog" style={{height:10,borderRadius:5}}>
+        <div className="prog-bar" style={{height:10,borderRadius:5,width:Math.min(pct,100)+"%",background:pct>90?"#e74c3c":pct>70?"#f0a500":"#2ecc71"}}/>
+      </div>
+    </div>
+    {show&&<Modal title="許可枠編集" onClose={()=>setShow(false)}>
+      <Fld l="許可番号"><Inp v={form.number} on={e=>setForm({...form,number:e.target.value})} ph="FKO-2026-0042"/></Fld>
+      <Fld l="年度"><Inp type="number" v={String(form.year)} on={e=>setForm({...form,year:e.target.value})}/></Fld>
+      <Fld l="年間許可数（尾）"><Inp type="number" v={String(form.annual)} on={e=>setForm({...form,annual:e.target.value})} ph="50000"/></Fld>
+      <Fld l="使用済（尾）"><Inp type="number" v={String(form.used)} on={e=>setForm({...form,used:e.target.value})} ph="32000"/></Fld>
+      <Fld l="有効期限"><Inp type="date" v={form.expiry} on={e=>setForm({...form,expiry:e.target.value})}/></Fld>
+      <div style={{display:"flex",gap:8,marginTop:16}}>
+        <Btn onClick={save}>保存</Btn><Btn c="g" onClick={()=>setShow(false)}>キャンセル</Btn>
+      </div>
+    </Modal>}
+  </div>;
+};
 // ダッシュボード
 const Dashboard=({pools,setPools,shipping,deaths,setDeaths,finance,setPage})=>{
   return <div>
     <SH title="ダッシュボード" sub={td()+" 現在"}/>
+    <WaterAlert water={water}/>
     <div className="gridStat">
       {[["","総在鰻",fmt(pools.reduce((s,p)=>s+(p.cur||p.current||0),0))+"尾","#2ecc71","stock"],
         ["🏊","管理池数",pools.length+"池","#2ecc71","stock"],
@@ -376,7 +463,7 @@ const App=()=>{
   const [medicines,setMed]=useState([]);
   const [processing,setProc]=useState([]);
   const [haccp,setHaccp]=useState([]);
-  const [permit]=useState([{id:"PM1",number:"FKO-2026-0042",year:2026,annual:50000,used:32000,expiry:"2027-03-31"}]);
+  const [permit,setPermit]=useState([{id:"PM1",number:"FKO-2026-0042",year:2026,annual:50000,used:32000,expiry:"2027-03-31"}]);
 
   useEffect(()=>{
     Promise.all([
@@ -410,10 +497,10 @@ const App=()=>{
   const [fHaccp,setFHaccp]=useState({date:td(),check_type:"入荷検品",result:"合格",staff:"",memo:""});
 
   const saveStock=async()=>{const res=await db.ins("erp_stock_in",fStock);if(res.ok){setSI(p=>[{...fStock,id:"S"+Date.now()},...p]);setFStock({date:td(),supplier:"",pool_id:"P01",lot:"",qty:"",kg:"",avg_size:"",staff:""});}};
-  const saveShip=async()=>{const res=await db.ins("erp_shipping",fShip);if(res.ok){setShipping(p=>[{...fShip,id:"SH"+Date.now()},...p]);setFShip({date:td(),destination:"",pool_id:"P01",qty:"",kg:"",price:""});}};
+  const saveShip=async()=>{const res=await db.ins("erp_shipping",fShip);if(res.ok){setShipping(p=>[{...fShip,id:"SH"+Date.now()},...p]);setFShip({date:td(),destination:"",pool_id:"P01",qty:"",kg:"",price:""});const qty=Number(fShip.qty||0);if(qty>0){setPermit(prev=>prev.map(p=>{const nu=(p.used||0)+qty;db.patch("erp_permit",p.id,{used:nu});return {...p,used:nu};}));}}};
   const saveFeed=async()=>{const res=await db.ins("erp_feeding",fFeed);if(res.ok){setFeeding(p=>[{...fFeed,id:"F"+Date.now()},...p]);setFFeed({date:td(),pool_id:"P01",feed_type:"配合飼料A",amount_kg:"",staff:""});}};
   const saveWater=async()=>{const res=await db.ins("erp_water_quality",fWater);if(res.ok){setWater(p=>[{...fWater,id:"W"+Date.now()},...p]);setFWater({date:td(),pool_id:"P01",temp:"",ph:"",do_level:"",nh3:"",no2:"",salt:"",exchange:"",staff:""});}};
-  const saveDeath=async()=>{const res=await db.ins("erp_deaths",fDeath);if(res.ok){setDeaths(p=>[{...fDeath,id:"D"+Date.now()},...p]);setFDeath({date:td(),pool_id:"P01",count:"",cause:"",staff:""});}};
+  const saveDeath=async()=>{const res=await db.ins("erp_deaths",fDeath);if(res.ok){setDeaths(p=>[{...fDeath,id:"D"+Date.now()},...p]);setFDeath({date:td(),pool_id:"P01",count:"",cause:"",staff:""});const cnt=Number(fDeath.count||0);if(cnt>0){setPools(prev=>prev.map(p=>{if(p.id!==fDeath.pool_id)return p;const nc=Math.max(0,(p.cur||p.current||0)-cnt);db.ups("erp_pools",{id:p.id,name:p.name,current:nc,weight:p.kg||p.weight||0,capacity:p.cap||p.capacity||0,status:p.st||p.status||"normal"});return {...p,cur:nc,current:nc};}));}}}; 
   const saveMed=async()=>{const d={...fMed,status:"active"};const res=await db.ins("erp_medicines",d);if(res.ok){setMed(p=>[{...d,id:"M"+Date.now()},...p]);setFMed({name:"",pool_id:"P01",use_date:td(),amount:"",purpose:"",withdraw_days:"",clear_date:"",staff:""});}};
   const saveProc=async()=>{const res=await db.ins("erp_processing",fProc);if(res.ok){setProc(p=>[{...fProc,id:"P"+Date.now()},...p]);setFProc({date:td(),product:"蒲焼き（1尾）",raw_kg:"",yield_kg:"",qty:"",staff:""});}};
   const saveHaccp=async()=>{const res=await db.ins("erp_haccp",fHaccp);if(res.ok){setHaccp(p=>[{...fHaccp,id:"H"+Date.now()},...p]);setFHaccp({date:td(),check_type:"入荷検品",result:"合格",staff:"",memo:""});}};
@@ -424,65 +511,44 @@ const App=()=>{
       cols={[{k:"date",l:"日付"},{k:"supplier",l:"仕入先"},{k:"pool_id",l:"池",r:pName},{k:"lot",l:"ロット"},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"staff",l:"担当"}]}
       rows={stockIn} form={fStock}
       setForm={setFStock} fields={[{k:"date",l:"入荷日",type:"date"},{k:"supplier",l:"仕入先",ph:"福岡淡水株式会社"},{k:"pool_id",l:"池",isPool:true},{k:"lot",l:"ロット",ph:"L2026-001"},{k:"qty",l:"尾数",type:"number"},{k:"kg",l:"重量(kg)",type:"number"},{k:"staff",l:"担当者",ph:"昭次郎"}]}
-      onSave={saveStock} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{stockIn.length}件</span><CSVBtn filename={`池入れ記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'supplier',l:'仕入先'},{k:'pool_id',l:'池ID'},{k:'lot',l:'ロット'},{k:'qty',l:'尾数'},{k:'kg',l:'重量kg'},{k:'avg_size',l:'平均サイズ'},{k:'staff',l:'担当'}]} rows={stockIn}/></span>}/>,
+      onSave={saveStock} onUpdate={async(id,d)=>{const ok=await db.patch("erp_stock_in",id,d);if(ok){setSI(p=>p.map(x=>x.id===id?{...x,...d}:x));}}} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{stockIn.length}件</span><CSVBtn filename={`池入れ記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'supplier',l:'仕入先'},{k:'pool_id',l:'池ID'},{k:'lot',l:'ロット'},{k:'qty',l:'尾数'},{k:'kg',l:'重量kg'},{k:'avg_size',l:'平均サイズ'},{k:'staff',l:'担当'}]} rows={stockIn}/></span>}/>,
     shipping:<ListPage title="出荷管理" icon="📦"
       cols={[{k:"date",l:"日付"},{k:"destination",l:"出荷先"},{k:"pool_id",l:"池",r:pName},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"price",l:"金額",r:v=>"¥"+fmt(v)}]}
       rows={shipping} form={fShip}
       setForm={setFShip} fields={[{k:"date",l:"出荷日",type:"date"},{k:"destination",l:"出荷先",ph:"タイセイ株式会社"},{k:"pool_id",l:"池",isPool:true},{k:"qty",l:"尾数",type:"number"},{k:"kg",l:"重量(kg)",type:"number"},{k:"price",l:"金額",type:"number"}]}
-      onSave={saveShip} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{fmt(shipping.reduce((s,r)=>s+(r.kg||0),0))}kg</span><CSVBtn filename={`出荷記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'destination',l:'出荷先'},{k:'pool_id',l:'池ID'},{k:'qty',l:'尾数'},{k:'kg',l:'重量kg'},{k:'price',l:'金額'}]} rows={shipping}/></span>}/>,
+      onSave={saveShip} onUpdate={async(id,d)=>{const ok=await db.patch("erp_shipping",id,d);if(ok){setShipping(p=>p.map(x=>x.id===id?{...x,...d}:x));}}} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{fmt(shipping.reduce((s,r)=>s+(r.kg||0),0))}kg</span><CSVBtn filename={`出荷記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'destination',l:'出荷先'},{k:'pool_id',l:'池ID'},{k:'qty',l:'尾数'},{k:'kg',l:'重量kg'},{k:'price',l:'金額'}]} rows={shipping}/></span>}/>,
     feeding:<ListPage title="給餌管理" icon="🌾"
       cols={[{k:"date",l:"日付"},{k:"pool_id",l:"池",r:pName},{k:"feed_type",l:"飼料"},{k:"amount_kg",l:"給餌量",r:v=>fmt(v)+"kg"},{k:"staff",l:"担当"}]}
       rows={feeding} form={fFeed}
       setForm={setFFeed} fields={[{k:"date",l:"日付",type:"date"},{k:"pool_id",l:"池",isPool:true},{k:"feed_type",l:"飼料",type:"select",opts:["配合飼料A","配合飼料B","生餌","その他"]},{k:"amount_kg",l:"給餌量(kg)",type:"number",step:"0.1"},{k:"staff",l:"担当者"}]}
-      onSave={saveFeed} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>本日{fmt(feeding.filter(f=>f.date===td()).reduce((s,f)=>s+(f.amount_kg||0),0))}kg</span><CSVBtn filename={`給餌記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'feed_type',l:'飼料種別'},{k:'amount_kg',l:'給餌量kg'},{k:'staff',l:'担当'}]} rows={feeding}/></span>}/>,
+      onSave={saveFeed} onUpdate={async(id,d)=>{const ok=await db.patch("erp_feeding",id,d);if(ok){setFeeding(p=>p.map(x=>x.id===id?{...x,...d}:x));}}} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>本日{fmt(feeding.filter(f=>f.date===td()).reduce((s,f)=>s+(f.amount_kg||0),0))}kg</span><CSVBtn filename={`給餌記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'feed_type',l:'飼料種別'},{k:'amount_kg',l:'給餌量kg'},{k:'staff',l:'担当'}]} rows={feeding}/></span>}/>,
     water:<ListPage title="水質管理" icon="💧"
       cols={[{k:"date",l:"日付"},{k:"pool_id",l:"池",r:pName},{k:"temp",l:"水温",r:v=>v+"℃"},{k:"ph",l:"pH"},{k:"do_level",l:"DO"},{k:"nh3",l:"NH3"},{k:"staff",l:"担当"}]}
       rows={water} form={fWater}
       setForm={setFWater} fields={[{k:"date",l:"日付",type:"date"},{k:"pool_id",l:"池",isPool:true},{k:"temp",l:"水温(℃)",type:"number",step:"0.1"},{k:"ph",l:"pH",type:"number",step:"0.1"},{k:"do_level",l:"DO(mg/L)",type:"number",step:"0.1"},{k:"nh3",l:"NH3",type:"number",step:"0.01"},{k:"no2",l:"NO2",type:"number",step:"0.01"},{k:"salt",l:"塩分(%)",type:"number",step:"0.1"},{k:"exchange",l:"換水率(%)",type:"number"},{k:"staff",l:"担当者"}]}
-      onSave={saveWater} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><CSVBtn filename={`水質記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'temp',l:'水温'},{k:'ph',l:'pH'},{k:'do_level',l:'DO'},{k:'nh3',l:'NH3'},{k:'no2',l:'NO2'},{k:'salt',l:'塩分'},{k:'exchange',l:'換水率'},{k:'staff',l:'担当'}]} rows={water}/><ExcelBtn filename={`鹿児島委託_水質記録_${td()}.xlsx`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'temp',l:'水温'},{k:'ph',l:'pH'},{k:'do_level',l:'DO'},{k:'nh3',l:'NH3'},{k:'no2',l:'NO2'},{k:'salt',l:'塩分'},{k:'exchange',l:'換水率'},{k:'staff',l:'担当'}]} rows={water.filter(r=>r.pool_id&&r.pool_id.startsWith('K'))} sheet="鹿児島委託_水質記録"/></span>}/>,
+      onSave={saveWater} onUpdate={async(id,d)=>{const ok=await db.patch("erp_water_quality",id,d);if(ok){setWater(p=>p.map(x=>x.id===id?{...x,...d}:x));}}} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><CSVBtn filename={`水質記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'temp',l:'水温'},{k:'ph',l:'pH'},{k:'do_level',l:'DO'},{k:'nh3',l:'NH3'},{k:'no2',l:'NO2'},{k:'salt',l:'塩分'},{k:'exchange',l:'換水率'},{k:'staff',l:'担当'}]} rows={water}/><ExcelBtn filename={`鹿児島委託_水質記録_${td()}.xlsx`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'temp',l:'水温'},{k:'ph',l:'pH'},{k:'do_level',l:'DO'},{k:'nh3',l:'NH3'},{k:'no2',l:'NO2'},{k:'salt',l:'塩分'},{k:'exchange',l:'換水率'},{k:'staff',l:'担当'}]} rows={water.filter(r=>r.pool_id&&r.pool_id.startsWith('K'))} sheet="鹿児島委託_水質記録"/></span>}/>,
     deaths:<ListPage title="死鰻管理" icon="📉"
       cols={[{k:"date",l:"日付"},{k:"pool_id",l:"池",r:pName},{k:"count",l:"死鰻数",r:v=><span style={{color:"#e74c3c",fontWeight:700}}>{fmt(v)}尾</span>},{k:"cause",l:"原因"},{k:"staff",l:"担当"}]}
       rows={deaths} form={fDeath}
       setForm={setFDeath} fields={[{k:"date",l:"日付",type:"date"},{k:"pool_id",l:"池",isPool:true},{k:"count",l:"死鰻数",type:"number"},{k:"cause",l:"原因",ph:"水質悪化・疾病 等"},{k:"staff",l:"担当者"}]}
-      onSave={saveDeath} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>累計{fmt(deaths.reduce((s,d)=>s+(d.count||0),0))}尾</span><CSVBtn filename={`死鰻記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'count',l:'死鰻数'},{k:'cause',l:'原因'},{k:'staff',l:'担当'}]} rows={deaths}/><ExcelBtn filename={`鹿児島委託_死鰻記録_${td()}.xlsx`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'count',l:'死鰻数'},{k:'cause',l:'原因'},{k:'staff',l:'担当'}]} rows={deaths.filter(r=>r.pool_id&&r.pool_id.startsWith('K'))} sheet="鹿児島委託_死鰻記録"/></span>}/>,
+      onSave={saveDeath} onUpdate={async(id,d)=>{const ok=await db.patch("erp_deaths",id,d);if(ok){setDeaths(p=>p.map(x=>x.id===id?{...x,...d}:x));}}} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>累計{fmt(deaths.reduce((s,d)=>s+(d.count||0),0))}尾</span><CSVBtn filename={`死鰻記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'count',l:'死鰻数'},{k:'cause',l:'原因'},{k:'staff',l:'担当'}]} rows={deaths}/><ExcelBtn filename={`鹿児島委託_死鰻記録_${td()}.xlsx`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'count',l:'死鰻数'},{k:'cause',l:'原因'},{k:'staff',l:'担当'}]} rows={deaths.filter(r=>r.pool_id&&r.pool_id.startsWith('K'))} sheet="鹿児島委託_死鰻記録"/></span>}/>,
     medicine:<ListPage title="薬品管理" icon="💊"
       cols={[{k:"use_date",l:"投薬日"},{k:"name",l:"薬品名"},{k:"pool_id",l:"池",r:pName},{k:"amount",l:"使用量"},{k:"purpose",l:"目的"},{k:"withdraw_days",l:"休薬日数",r:v=>v+"日"},{k:"clear_date",l:"休薬満了"},{k:"status",l:"状態",r:v=><Bdg c={v==="active"?"y":"g"}>{v==="active"?"投薬中":"完了"}</Bdg>}]}
       rows={medicines} form={fMed}
       setForm={setFMed} fields={[{k:"name",l:"薬品名",ph:"フラボマイシン"},{k:"pool_id",l:"池",isPool:true},{k:"use_date",l:"投薬日",type:"date"},{k:"amount",l:"使用量",ph:"50g"},{k:"purpose",l:"目的",ph:"腸炎治療"},{k:"withdraw_days",l:"休薬日数",type:"number"},{k:"staff",l:"担当者"}]}
-      onSave={saveMed} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>投薬中{medicines.filter(m=>m.status==="active").length}件</span><CSVBtn filename={`薬品記録_${td()}.csv`} cols={[{k:'use_date',l:'投薬日'},{k:'name',l:'薬品名'},{k:'pool_id',l:'池ID'},{k:'amount',l:'使用量'},{k:'purpose',l:'目的'},{k:'withdraw_days',l:'休薬日数'},{k:'clear_date',l:'休薬満了'},{k:'status',l:'状態'}]} rows={medicines}/></span>}/>,
+      onSave={saveMed} onUpdate={async(id,d)=>{const ok=await db.patch("erp_medicines",id,d);if(ok){setMed(p=>p.map(x=>x.id===id?{...x,...d}:x));}}} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>投薬中{medicines.filter(m=>m.status==="active").length}件</span><CSVBtn filename={`薬品記録_${td()}.csv`} cols={[{k:'use_date',l:'投薬日'},{k:'name',l:'薬品名'},{k:'pool_id',l:'池ID'},{k:'amount',l:'使用量'},{k:'purpose',l:'目的'},{k:'withdraw_days',l:'休薬日数'},{k:'clear_date',l:'休薬満了'},{k:'status',l:'状態'}]} rows={medicines}/></span>}/>,
     processing:<ListPage title="加工管理" icon="🏭"
       cols={[{k:"date",l:"日付"},{k:"product",l:"製品"},{k:"raw_kg",l:"原料",r:v=>fmt(v)+"kg"},{k:"yield_kg",l:"歩留",r:v=>fmt(v)+"kg"},{k:"qty",l:"個数",r:v=>fmt(v)+"個"},{k:"staff",l:"担当"}]}
       rows={processing} form={fProc}
       setForm={setFProc} fields={[{k:"date",l:"加工日",type:"date"},{k:"product",l:"製品",type:"select",opts:["蒲焼き（1尾）","白焼き（1尾）","蒲焼き（カット）","その他"]},{k:"raw_kg",l:"原料(kg)",type:"number",step:"0.1"},{k:"yield_kg",l:"歩留(kg)",type:"number",step:"0.1"},{k:"qty",l:"個数",type:"number"},{k:"staff",l:"担当者"}]}
-      onSave={saveProc} stats={<CSVBtn filename={`加工記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'product',l:'製品'},{k:'raw_kg',l:'原料kg'},{k:'yield_kg',l:'歩留kg'},{k:'qty',l:'個数'},{k:'staff',l:'担当'}]} rows={processing}/>}/>,
+      onSave={saveProc} onUpdate={async(id,d)=>{const ok=await db.patch("erp_processing",id,d);if(ok){setProc(p=>p.map(x=>x.id===id?{...x,...d}:x));}}} stats={<CSVBtn filename={`加工記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'product',l:'製品'},{k:'raw_kg',l:'原料kg'},{k:'yield_kg',l:'歩留kg'},{k:'qty',l:'個数'},{k:'staff',l:'担当'}]} rows={processing}/>}/>,
     haccp:<ListPage title="HACCP管理" icon="✅"
       cols={[{k:"date",l:"日付"},{k:"check_type",l:"点検種別"},{k:"result",l:"結果",r:v=><Bdg c={v==="合格"?"g":"r"}>{v}</Bdg>},{k:"staff",l:"担当"},{k:"memo",l:"メモ"}]}
       rows={haccp} form={fHaccp}
       setForm={setFHaccp} fields={[{k:"date",l:"日付",type:"date"},{k:"check_type",l:"点検種別",type:"select",opts:["入荷検品","温度管理","衛生点検","設備点検","加工工程","出荷検品","その他"]},{k:"result",l:"結果",type:"select",opts:["合格","要改善","不合格"]},{k:"staff",l:"担当者"},{k:"memo",l:"メモ",type:"textarea"}]}
-      onSave={saveHaccp} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{haccp.length}件</span><CSVBtn filename={`HACCP記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'check_type',l:'点検種別'},{k:'result',l:'結果'},{k:'staff',l:'担当'},{k:'memo',l:'メモ'}]} rows={haccp}/></span>}/>,
-    permit:<div>
-      <SH title="📋 許可枠管理"/>
-      {permit.map(p=>{const pct=Math.round(p.used/p.annual*100);return(
-        <div key={p.id}>
-          <div className="gridStat">
-            {[["許可番号",p.number,"#2ecc71"],["年度",p.year+"年度","#2ecc71"],["年間許可",fmt(p.annual)+"尾","#2ecc71"],["使用済",fmt(p.used)+"尾","#f0a500"],["残枠",fmt(p.annual-p.used)+"尾","#2ecc71"],["期限",fd(p.expiry),"#d4af37"]].map(([l,v,c])=>(
-              <div className="stat" key={l}><div style={{fontSize:10,color:"#7aa885",marginBottom:4}}>{l}</div><div style={{fontSize:16,fontWeight:800,color:c}}>{v}</div></div>
-            ))}
-          </div>
-          <div className="card">
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-              <span style={{fontSize:12,color:"#7aa885"}}>許可枠使用率</span>
-              <span style={{fontWeight:700,color:pct>80?"#f0a500":"#2ecc71"}}>{pct}%</span>
-            </div>
-            <div className="prog" style={{height:10,borderRadius:5}}>
-              <div className="prog-bar" style={{height:10,borderRadius:5,width:`${Math.min(pct,100)}%`,background:pct>90?"#e74c3c":pct>70?"#f0a500":"#2ecc71"}}/>
-            </div>
-          </div>
-        </div>
-      );})}
-    </div>,
-
-    audit:<AuditPage pools={pools} deaths={deaths} medicines={medicines} shipping={shipping} water={water} haccp={haccp}/>,
+      onSave={saveHaccp} onUpdate={async(id,d)=>{const ok=await db.patch("erp_haccp",id,d);if(ok){setHaccp(p=>p.map(x=>x.id===id?{...x,...d}:x));}}} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{haccp.length}件</span><CSVBtn filename={`HACCP記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'check_type',l:'点検種別'},{k:'result',l:'結果'},{k:'staff',l:'担当'},{k:'memo',l:'メモ'}]} rows={haccp}/></span>}/>,
+    permit:<PermitPage permit={permit} setPermit={setPermit}/>,
+        audit:<AuditPage pools={pools} deaths={deaths} medicines={medicines} shipping={shipping} water={water} haccp={haccp}/>,
   };
 
   if(loading)return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16}}>
