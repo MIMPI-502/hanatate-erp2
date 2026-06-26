@@ -137,11 +137,11 @@ const PoolEdit=({pool,setPools})=>{
         <div style={{fontSize:11,color:"#7aa885",marginBottom:8,fontWeight:700}}>池データ編集</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
           <div><div style={{fontSize:10,color:"#7aa885",marginBottom:3}}>在鰻数(尾)</div>
-            <input className="inp" type="number" value={cur} onChange={e=>setCur(e.target.value)} style={{padding:"5px 8px",fontSize:13,fontWeight:700}}/></div>
+            <input className="inp" type="number" inputMode="numeric" pattern="[0-9]*" value={cur} onChange={e=>setCur(e.target.value)} style={{padding:"10px 8px",fontSize:16,fontWeight:700,textAlign:"center",width:"100%",boxSizing:"border-box"}}/></div>
           <div><div style={{fontSize:10,color:"#7aa885",marginBottom:3}}>重量(kg)</div>
-            <input className="inp" type="number" value={kg} onChange={e=>setKg(e.target.value)} style={{padding:"5px 8px",fontSize:13}}/></div>
+            <input className="inp" type="number" inputMode="decimal" pattern="[0-9.]*" value={kg} onChange={e=>setKg(e.target.value)} style={{padding:"10px 8px",fontSize:16,textAlign:"center",width:"100%",boxSizing:"border-box"}}/></div>
           <div><div style={{fontSize:10,color:"#7aa885",marginBottom:3}}>容量(尾)</div>
-            <input className="inp" type="number" value={cap} onChange={e=>setCap(e.target.value)} style={{padding:"5px 8px",fontSize:13}}/></div>
+            <input className="inp" type="number" inputMode="numeric" pattern="[0-9]*" value={cap} onChange={e=>setCap(e.target.value)} style={{padding:"10px 8px",fontSize:16,textAlign:"center",width:"100%",boxSizing:"border-box"}}/></div>
         </div>
         <div style={{display:"flex",gap:6}}>
           <button onClick={save} disabled={saving} style={{flex:1,padding:"12px",background:saving?"#666":"#2ecc71",border:"none",borderRadius:8,color:"#0a0f0d",fontSize:15,cursor:"pointer",fontWeight:700,touchAction:"manipulation"}}>{saving?"保存中...":"💾 保存する"}</button>
@@ -191,7 +191,7 @@ const DeathInput=({poolId,poolName,deaths,setDeaths})=>{
         </div>
         <div style={{marginBottom:8}}>
           <div style={{fontSize:11,color:"#7aa885",marginBottom:4}}>死鰻数（尾）</div>
-          <input className="inp" type="number" value={count} onChange={e=>setCount(e.target.value)} placeholder="例: 5" style={{width:"100%",padding:"10px",fontSize:16,boxSizing:"border-box"}}/>
+          <input className="inp" type="number" inputMode="numeric" pattern="[0-9]*" value={count} onChange={e=>setCount(e.target.value)} placeholder="0" style={{width:"100%",padding:"12px",fontSize:20,boxSizing:"border-box",textAlign:"center",letterSpacing:2}}/>
         </div>
         <div style={{marginBottom:12}}>
           <div style={{fontSize:11,color:"#7aa885",marginBottom:4}}>原因</div>
