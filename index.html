@@ -419,7 +419,7 @@ const App=()=>{
   const saveHaccp=async()=>{const res=await db.ins("erp_haccp",fHaccp);if(res.ok){setHaccp(p=>[{...fHaccp,id:"H"+Date.now()},...p]);setFHaccp({date:td(),check_type:"入荷検品",result:"合格",staff:"",memo:""});}};
 
   const pages={
-    dashboard:<Dashboard pools={pools} shipping={shipping} deaths={deaths} finance={[]} setPage={setPg}/>,
+    dashboard:<Dashboard pools={pools} setPools={setPools} shipping={shipping} deaths={deaths} setDeaths={setDeaths} finance={[]} setPage={setPg}/>,
     stock:<ListPage title="池入れ・在鰻管理" icon=""
       cols={[{k:"date",l:"日付"},{k:"supplier",l:"仕入先"},{k:"pool_id",l:"池",r:pName},{k:"lot",l:"ロット"},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"staff",l:"担当"}]}
       rows={stockIn} form={fStock}
