@@ -404,10 +404,14 @@ const kg=Number(x.kg||x.weight||0);
 const cap=Number(x.cap||x.capacity||0);
 const init=POOLS.find(q=>q.id===x.id);
 if(init){
-const needFix=cur<init.cur*0.1||cap<init.cap*0.1;
-if(needFix){
-db.patch("erp_pools",x.id,{current:init.cur,weight:init.kg,capacity:init.cap});
-return{...x,cur:init.cur,kg:init.kg,cap:init.cap,st:x.st||x.status||"normal"};
+const fixCur=cur<100&&init.cur>=100;
+const fixCap=cap<1000&&init.cap>=1000;
+if(fixCur||fixCap){
+const nc=fixCur?init.cur:cur;
+const nk=fixCur?init.kg:kg;
+const ncap=fixCap?init.cap:cap;
+db.patch("erp_pools",x.id,{current:nc,weight:nk,capacity:ncap});
+return{...x,cur:nc,kg:nk,cap:ncap,st:x.st||x.status||"normal"};
 }
 }
 return{...x,cur,kg,cap,st:x.st||x.status||"normal"};
