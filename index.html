@@ -284,26 +284,28 @@ const Dashboard=({pools,setPools,shipping,deaths,setDeaths,finance,setPage})=>{
 };
 
 // 汎用一覧ページ
-const ListPage=({title,icon,cols,rows,form,setForm,fields,onSave,stats,poolOpts})=>{
-  const resolveField=f=>f.isPool?{...f,type:"select",opts:poolOpts||f.opts}:f;
-  const [show,setShow]=useState(false);
-  const [toast,setToast]=useState("");
-  const t=(m,tp)=>{setToast(m);setTimeout(()=>setToast(""),2500);};
-  const save=async()=>{await onSave();setShow(false);t("✅ 保存しました");};
-  return <div>
-    <Toast m={toast}/>
-    <SH title={`${icon} ${title}`} sub={stats} action={<Btn onClick={()=>setShow(true)}>＋ 新規登録</Btn>}/>
-    <div className="card"><Tbl cols={cols} rows={rows}/></div>
-    {show&&<Modal title={`${title}登録`} onClose={()=>setShow(false)}>
-      {fields.map(f=><Fld key={f.k} l={f.l}>{f.type==="select"?<Sel v={form[f.k]||""} on={e=>setForm({...form,[f.k]:e.target.value})}>{f.opts.map(o=><option key={o} value={o}>{o}</option>)}</Sel>:f.type==="textarea"?<Txa v={form[f.k]||""} on={e=>setForm({...form,[f.k]:e.target.value})}/>:<Inp type={f.type||"text"} step={f.step} v={form[f.k]||""} on={e=>setForm({...form,[f.k]:e.target.value})} ph={f.ph}/>}</Fld>)}
-      <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:8}}>
-        <Btn c="g" onClick={()=>setShow(false)}>キャンセル</Btn><Btn onClick={save}>保存</Btn>
-      </div>
-    </Modal>}
-  </div>;
-};
+const ListPage=({title,icon,cols,rows,form,setForm,fields,onSave,onDelete,stats,poolOpts})=>{
+const resolveField=f=>f.isPool?{...f,type:"select",opts:poolOpts||f.opts}:f;
+const [show,setShow]=useState(false);
+const [filter,setFilter]=useState("");
+const [toast,setToast]=useState("");
+const t=(m)=>{setToast(m);setTimeout(()=>setToast(""),2500);};
+const save=async()=>{await onSave();setShow(false);t("保存しました");};
+const rows2=filter?rows.filter(r=>Object.values(r).some(v=>String(v||"").includes(filter))):rows;
+return <div>
+<Toast m={toast}/>
+<SH title={icon+" "+title} sub={stats} action={<Btn onClick={()=>setShow(true)}>+ 新規登録</Btn>}/>
+<div style={{padding:"0 0 6px"}}><input className="inp" value={filter} onChange={e=>setFilter(e.target.value)} placeholder="絞り込み" style={{width:"100%",boxSizing:"border-box",fontSize:12}}/></div>
+<div className="card"><Tbl cols={cols} rows={rows2} onDelete={onDelete}/></div>
+{show&&<Modal title={title+"登録"} onClose={()=>setShow(false)}>
+{fields.map(f=>{const rf=resolveField(f);return <Fld key={rf.k} l={rf.l}>{rf.type==="select"?<Sel v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}>{(rf.opts||[]).map(o=><option key={o} value={o}>{o}</option>)}</Sel>:rf.type==="textarea"?<Txa v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}/>:<Inp type={rf.type||"text"} step={rf.step} v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})} ph={rf.ph}/>}</Fld>;})}
+<div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:8}}>
+<Btn c="g" onClick={()=>setShow(false)}>キャンセル</Btn><Btn onClick={save}>保存</Btn>
+</div>
+</Modal>}
+</div>;
+}
 
-// 監査
 const AuditPage=({pools,deaths,medicines,shipping,water,haccp})=>{
   const [mon,setMon]=useState(td().slice(0,7));
   const [tab,setTab]=useState("shipping");
