@@ -65,6 +65,7 @@ const db={
     if(!r.ok){const e=await r.text();console.error("ups error",t,r.status,e);return {ok:false,err:e};}
     return {ok:true};
   },
+  patch:async(t,id,d)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}?id=eq.${encodeURIComponent(id)}`,{method:"PATCH",headers:{...H,Prefer:"return=minimal"},body:JSON.stringify(d)});return r.ok;},
 };
 const fmt=n=>n!=null?Number(n).toLocaleString():"—";
 const td=()=>new Date().toISOString().slice(0,10);
