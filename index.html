@@ -209,7 +209,7 @@ const DeathInput=({poolId,poolName,deaths,setDeaths})=>{
 };
 const Toast=({m,t="ok"})=>m?<div className="toast" style={{background:t==="ok"?"#2ecc71":"#e74c3c",color:"#0a0f0d"}}>{m}</div>:null;
 const Btn=({c="p",onClick,children,sm})=><button className={`btn btn-${c}`} style={sm?{padding:"5px 11px",fontSize:11}:{}} onClick={onClick}>{children}</button>;
-const Inp=({v,on,type="text",ph,step})=><input className="inp" type={type} value={v} onChange={on} placeholder={ph} step={step}/>;
+const Inp=({v,on,type="text",ph,step})=><input className="inp" type={type} inputMode={type==="number"?(step&&step!=="1"?"decimal":"numeric"):undefined} pattern={type==="number"?"[0-9.]*":undefined} value={v} onChange={on} placeholder={ph} step={step}/>;
 const Sel=({v,on,children})=><select className="inp" value={v} onChange={on}>{children}</select>;
 const Txa=({v,on,rows=3})=><textarea className="inp" value={v} onChange={on} rows={rows} style={{resize:"vertical"}}/>;
 const Fld=({l,children})=><div className="fld"><label className="lbl">{l}</label>{children}</div>;
