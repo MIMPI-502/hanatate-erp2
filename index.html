@@ -427,7 +427,7 @@ const App=()=>{
       cols={[{k:"date",l:"日付"},{k:"check_type",l:"点検種別"},{k:"result",l:"結果",r:v=><Bdg c={v==="合格"?"g":"r"}>{v}</Bdg>},{k:"staff",l:"担当"},{k:"memo",l:"メモ"}]}
       rows={haccp} form={fHaccp}
       setForm={setFHaccp} fields={[{k:"date",l:"日付",type:"date"},{k:"check_type",l:"点検種別",type:"select",opts:["入荷検品","温度管理","衛生点検","設備点検","加工工程","出荷検品","その他"]},{k:"result",l:"結果",type:"select",opts:["合格","要改善","不合格"]},{k:"staff",l:"担当者"},{k:"memo",l:"メモ",type:"textarea"}]}
-      onSave={saveHaccp} stats="HACCP記録"/>,
+      onSave={saveHaccp} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{haccp.length}件</span><CSVBtn filename={`HACCP記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'check_type',l:'点検種別'},{k:'result',l:'結果'},{k:'staff',l:'担当'},{k:'memo',l:'メモ'}]} rows={haccp}/></span>}/>,
     permit:<div>
       <SH title="📋 許可枠管理"/>
       {permit.map(p=>{const pct=Math.round(p.used/p.annual*100);return(
