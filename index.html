@@ -304,6 +304,51 @@ const ListPage=({title,icon,cols,rows,form,setForm,fields,onSave,onDelete,stats,
   </div>;
 };
 
+// 許可枠管理
+const PermitPage=({permit,setPermit})=>{
+  const [show,setShow]=useState(false);
+  const [form,setForm]=useState({number:"",year:new Date().getFullYear(),annual:"",used:"",expiry:""});
+  const [toast,setToast]=useState("");
+  const t=(m)=>{setToast(m);setTimeout(()=>setToast(""),2500);};
+  const p=permit[0]||{};
+  const pct=p.annual?Math.round((p.used||0)/p.annual*100):0;
+  const save=async()=>{
+    const updated={...p,...form,annual:Number(form.annual||p.annual),used:Number(form.used||p.used),year:Number(form.year||p.year)};
+    await db.ups("erp_permit",updated);
+    setPermit([updated]);
+    setShow(false);t("✅ 保存しました");
+  };
+  return <div>
+    <Toast m={toast}/>
+    <SH title="📋 許可枠管理" action={<Btn onClick={()=>{setForm({number:p.number||"",year:p.year||2026,annual:p.annual||"",used:p.used||"",expiry:p.expiry||""});setShow(true);}}>✏️ 編集</Btn>}/>
+    <div className="gridStat">
+      {[["許可番号",p.number||"—","#2ecc71"],["年度",(p.year||"—")+"年度","#2ecc71"],["年間許可",fmt(p.annual||0)+"尾","#2ecc71"],["使用済",fmt(p.used||0)+"尾","#f0a500"],["残枠",fmt((p.annual||0)-(p.used||0))+"尾","#2ecc71"],["期限",fd(p.expiry)||"—","#d4af37"]].map(([l,v,c])=>(
+        <div className="stat" key={l}><div style={{fontSize:10,color:"#7aa885",marginBottom:4}}>{l}</div><div style={{fontSize:16,fontWeight:800,color:c}}>{v}</div></div>
+      ))}
+    </div>
+    <div className="card">
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+        <span style={{fontSize:12,color:"#7aa885"}}>許可枠使用率</span>
+        <span style={{fontWeight:700,color:pct>80?"#f0a500":"#2ecc71"}}>{pct}%</span>
+      </div>
+      <div className="prog" style={{height:10,borderRadius:5}}>
+        <div className="prog-bar" style={{height:10,borderRadius:5,width:`${Math.min(pct,100)}%`,background:pct>90?"#e74c3c":pct>70?"#f0a500":"#2ecc71"}}/>
+      </div>
+    </div>
+    {show&&<Modal title="許可枠編集" onClose={()=>setShow(false)}>
+      <Fld l="許可番号"><Inp v={form.number} on={e=>setForm({...form,number:e.target.value})} ph="FKO-2026-0042"/></Fld>
+      <Fld l="年度"><Inp type="number" v={form.year} on={e=>setForm({...form,year:e.target.value})} ph="2026"/></Fld>
+      <Fld l="年間許可数（尾）"><Inp type="number" inputMode="numeric" v={form.annual} on={e=>setForm({...form,annual:e.target.value})} ph="50000"/></Fld>
+      <Fld l="使用済（尾）"><Inp type="number" inputMode="numeric" v={form.used} on={e=>setForm({...form,used:e.target.value})} ph="32000"/></Fld>
+      <Fld l="有効期限"><Inp type="date" v={form.expiry} on={e=>setForm({...form,expiry:e.target.value})}/></Fld>
+      <div style={{display:"flex",gap:8,marginTop:16}}>
+        <Btn onClick={save}>💾 保存</Btn>
+        <Btn c="g" onClick={()=>setShow(false)}>キャンセル</Btn>
+      </div>
+    </Modal>}
+  </div>;
+};
+
 // 監査
 const AuditPage=({pools,deaths,medicines,shipping,water,haccp})=>{
   const [mon,setMon]=useState(td().slice(0,7));
@@ -377,7 +422,7 @@ const App=()=>{
   const [medicines,setMed]=useState([]);
   const [processing,setProc]=useState([]);
   const [haccp,setHaccp]=useState([]);
-  const [permit]=useState([{id:"PM1",number:"FKO-2026-0042",year:2026,annual:50000,used:32000,expiry:"2027-03-31"}]);
+  const [permit,setPermit]=useState([{id:"PM1",number:"FKO-2026-0042",year:2026,annual:50000,used:32000,expiry:"2027-03-31"}]);
 
   useEffect(()=>{
     Promise.all([
@@ -461,27 +506,7 @@ const App=()=>{
       rows={haccp} form={fHaccp}
       setForm={setFHaccp} fields={[{k:"date",l:"日付",type:"date"},{k:"check_type",l:"点検種別",type:"select",opts:["入荷検品","温度管理","衛生点検","設備点検","加工工程","出荷検品","その他"]},{k:"result",l:"結果",type:"select",opts:["合格","要改善","不合格"]},{k:"staff",l:"担当者"},{k:"memo",l:"メモ",type:"textarea"}]}
       onSave={saveHaccp} onDelete={async(r)=>{const ok=await db.del("erp_haccp",r.id);if(ok)setHaccp(p=>p.filter(x=>x.id!==r.id));return ok;}} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{haccp.length}件</span><CSVBtn filename={`HACCP記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'check_type',l:'点検種別'},{k:'result',l:'結果'},{k:'staff',l:'担当'},{k:'memo',l:'メモ'}]} rows={haccp}/></span>}/>,
-    permit:<div>
-      <SH title="📋 許可枠管理"/>
-      {permit.map(p=>{const pct=Math.round(p.used/p.annual*100);return(
-        <div key={p.id}>
-          <div className="gridStat">
-            {[["許可番号",p.number,"#2ecc71"],["年度",p.year+"年度","#2ecc71"],["年間許可",fmt(p.annual)+"尾","#2ecc71"],["使用済",fmt(p.used)+"尾","#f0a500"],["残枠",fmt(p.annual-p.used)+"尾","#2ecc71"],["期限",fd(p.expiry),"#d4af37"]].map(([l,v,c])=>(
-              <div className="stat" key={l}><div style={{fontSize:10,color:"#7aa885",marginBottom:4}}>{l}</div><div style={{fontSize:16,fontWeight:800,color:c}}>{v}</div></div>
-            ))}
-          </div>
-          <div className="card">
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-              <span style={{fontSize:12,color:"#7aa885"}}>許可枠使用率</span>
-              <span style={{fontWeight:700,color:pct>80?"#f0a500":"#2ecc71"}}>{pct}%</span>
-            </div>
-            <div className="prog" style={{height:10,borderRadius:5}}>
-              <div className="prog-bar" style={{height:10,borderRadius:5,width:`${Math.min(pct,100)}%`,background:pct>90?"#e74c3c":pct>70?"#f0a500":"#2ecc71"}}/>
-            </div>
-          </div>
-        </div>
-      );})}
-    </div>,
+    permit:<PermitPage permit={permit} setPermit={setPermit}/>,
 
     audit:<AuditPage pools={pools} deaths={deaths} medicines={medicines} shipping={shipping} water={water} haccp={haccp}/>,
   };
