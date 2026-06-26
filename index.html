@@ -245,7 +245,7 @@ const Dashboard=({pools,setPools,shipping,deaths,setDeaths,finance,setPage})=>{
     <SH title="ダッシュボード" sub={td()+" 現在"}/>
     <div className="gridStat">
       {[["","総在鰻",fmt(pools.reduce((s,p)=>s+(p.cur||p.current||0),0))+"尾","#2ecc71","stock"],
-        ["🏞️","管理池数",pools.length+"池","#2ecc71","stock"],
+        ["🌀","管理池数",pools.length+"池","#2ecc71","stock"],
         ["📦","出荷件数",shipping.length+"件","#2ecc71","shipping"],
 
         ["⚠️","死鰻",fmt(deaths.reduce((s,d)=>s+(d.count||0),0))+"尾","#e74c3c","deaths"]
