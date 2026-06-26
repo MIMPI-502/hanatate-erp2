@@ -59,7 +59,12 @@ const H={"Content-Type":"application/json",apikey:SB_KEY,Authorization:"Bearer "
 const db={
   get:async(t)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}?select=*&order=created_at.desc`,{headers:H});return r.ok?await r.json():[];},
   ins:async(t,d)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"return=representation"},body:JSON.stringify(d)});return r.ok;},
-  ups:async(t,d)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"resolution=merge-duplicates,return=representation"},body:JSON.stringify(d)});return r.ok;},
+  ups:async(t,d,col="id")=>{
+    // まずidで既存行を削除してから挿入（確実なupsert）
+    await fetch(`${SB_URL}/rest/v1/${t}?${col}=eq.${d[col]}`,{method:"DELETE",headers:H});
+    const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"return=representation"},body:JSON.stringify(d)});
+    return r.ok;
+  },
 };
 const fmt=n=>n!=null?Number(n).toLocaleString():"—";
 const td=()=>new Date().toISOString().slice(0,10);
