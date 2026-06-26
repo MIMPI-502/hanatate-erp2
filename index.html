@@ -115,22 +115,24 @@ const PoolEdit=({pool,setPools})=>{
   const [cur,setCur]=useState(pool.cur||pool.current||0);
   const [kg,setKg]=useState(pool.kg||pool.weight||0);
   const [cap,setCap]=useState(pool.cap||pool.capacity||0);
+  const [saving,setSaving]=useState(false);
   const [saved,setSaved]=useState(false);
   const [err,setErr]=useState("");
   const save=async()=>{
-    setErr("");
+    if(saving)return;
+    setSaving(true);setErr("");
     try{
-      setPools(prev=>prev.map(p=>p.id===pool.id?{...p,cur:Number(cur),kg:Number(kg),cap:Number(cap)}:p));
       const ok=await db.ups("erp_pools",{id:pool.id,name:pool.name,current:Number(cur),weight:Number(kg),capacity:Number(cap),status:pool.st||pool.status||"normal"});
-      if(ok){setShow(false);setSaved(true);setTimeout(()=>setSaved(false),2000);}
-      else{setErr("保存失敗。再度お試しください");}
+      if(ok){setPools(prev=>prev.map(p=>p.id===pool.id?{...p,cur:Number(cur),current:Number(cur),kg:Number(kg),weight:Number(kg),cap:Number(cap),capacity:Number(cap)}:p));setShow(false);setSaved(true);setTimeout(()=>setSaved(false),3000);}
+      else{setErr("保存に失敗しました");}
     }catch(e){setErr("エラー: "+e.message);}
+    setSaving(false);
   };
   return <div style={{marginBottom:8}}>
     {saved&&<div style={{textAlign:"center",color:"#2ecc71",fontSize:11,marginBottom:4}}>✅ 更新しました</div>}
     {err&&<div style={{textAlign:"center",color:"#e74c3c",fontSize:11,marginBottom:4}}>❌ {err}</div>}
     {!show
-      ?<button onClick={()=>setShow(true)} style={{width:"100%",padding:"4px",background:"rgba(46,204,113,0.08)",border:"1px solid rgba(46,204,113,0.2)",borderRadius:6,color:"#2ecc71",fontSize:11,cursor:"pointer"}}>✏️ 在鰻数・kg・容量を編集</button>
+      ?<button onClick={()=>setShow(true)} style={{width:"100%",padding:"10px",background:"rgba(46,204,113,0.08)",border:"1px solid rgba(46,204,113,0.2)",borderRadius:8,color:"#2ecc71",fontSize:13,cursor:"pointer",fontWeight:700,touchAction:"manipulation"}}>✏️ 在鰻数・kg・容量を編集</button>
       :<div style={{background:"rgba(46,204,113,0.05)",border:"1px solid rgba(46,204,113,0.2)",borderRadius:8,padding:"10px"}}>
         <div style={{fontSize:11,color:"#7aa885",marginBottom:8,fontWeight:700}}>池データ編集</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
@@ -142,8 +144,8 @@ const PoolEdit=({pool,setPools})=>{
             <input className="inp" type="number" value={cap} onChange={e=>setCap(e.target.value)} style={{padding:"5px 8px",fontSize:13}}/></div>
         </div>
         <div style={{display:"flex",gap:6}}>
-          <button onClick={save} style={{flex:1,padding:"6px",background:"#2ecc71",border:"none",borderRadius:6,color:"#0a0f0d",fontSize:12,cursor:"pointer",fontWeight:700}}>保存する</button>
-          <button onClick={()=>setShow(false)} style={{padding:"6px 10px",background:"none",border:"1px solid #1e3326",borderRadius:6,color:"#7aa885",fontSize:11,cursor:"pointer"}}>閉じる</button>
+          <button onClick={save} disabled={saving} style={{flex:1,padding:"12px",background:saving?"#666":"#2ecc71",border:"none",borderRadius:8,color:"#0a0f0d",fontSize:15,cursor:"pointer",fontWeight:700,touchAction:"manipulation"}}>{saving?"保存中...":"💾 保存する"}</button>
+          <button onClick={()=>{setShow(false);setErr("");}} style={{padding:"12px 16px",background:"none",border:"1px solid #1e3326",borderRadius:8,color:"#7aa885",fontSize:13,cursor:"pointer",touchAction:"manipulation"}}>閉じる</button>
         </div>
       </div>
     }
@@ -154,44 +156,52 @@ const DeathInput=({poolId,poolName,deaths,setDeaths})=>{
   const [count,setCount]=useState("");
   const [cause,setCause]=useState("原因不明");
   const [show,setShow]=useState(false);
+  const [saving,setSaving]=useState(false);
   const [saved,setSaved]=useState(false);
   const [derr,setDerr]=useState("");
   const save=async()=>{
-    if(!count)return;
-    setDerr("");
+    if(!count||saving)return;
+    setSaving(true);setDerr("");
     try{
       const row={date,pool_id:poolId,count:Number(count),cause,staff:"",memo:""};
       const ok=await db.ins("erp_deaths",row);
-      if(ok){setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);setCount("");setSaved(true);setTimeout(()=>setSaved(false),2000);}
-      else{setDerr("保存失敗。再度お試しください");}
+      if(ok){setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);setCount("");setShow(false);setSaved(true);setTimeout(()=>setSaved(false),3000);}
+      else{setDerr("保存に失敗しました");}
     }catch(e){setDerr("エラー: "+e.message);}
+    setSaving(false);
   };
   const todayCount=deaths.filter(d=>d.pool_id===poolId&&d.date===td()).reduce((s,d)=>s+(d.count||0),0);
   const monthCount=deaths.filter(d=>d.pool_id===poolId&&d.date&&d.date.slice(0,7)===td().slice(0,7)).reduce((s,d)=>s+(d.count||0),0);
   const totalCount=deaths.filter(d=>d.pool_id===poolId).reduce((s,d)=>s+(d.count||0),0);
   return <div>
-    <div style={{display:"flex",justifyContent:"space-between",fontSize:11,marginBottom:6}}>
-      <span style={{color:"#e74c3c"}}>本日: <strong>{fmt(todayCount)}</strong>尾</span>
-      <span style={{color:"#f0a500"}}>今月: <strong>{fmt(monthCount)}</strong>尾</span>
+    <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:8,padding:"4px 0"}}>
+      <span style={{color:"#e74c3c",fontWeight:700}}>本日: {fmt(todayCount)}尾</span>
+      <span style={{color:"#f0a500",fontWeight:700}}>今月: {fmt(monthCount)}尾</span>
       <span style={{color:"#4a7055"}}>累計: {fmt(totalCount)}尾</span>
     </div>
-    {saved&&<div style={{textAlign:"center",color:"#2ecc71",fontSize:11,marginBottom:4}}>✅ 記録しました</div>}
-    {derr&&<div style={{textAlign:"center",color:"#e74c3c",fontSize:11,marginBottom:4}}>❌ {derr}</div>}
+    {saved&&<div style={{textAlign:"center",color:"#2ecc71",fontSize:13,marginBottom:6,padding:"6px",background:"rgba(46,204,113,0.1)",borderRadius:6}}>✅ 記録しました</div>}
+    {derr&&<div style={{textAlign:"center",color:"#e74c3c",fontSize:12,marginBottom:6,padding:"6px",background:"rgba(231,76,60,0.1)",borderRadius:6}}>❌ {derr}</div>}
     {!show
-      ?<button onClick={()=>setShow(true)} style={{width:"100%",padding:"5px",background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:6,color:"#e74c3c",fontSize:11,cursor:"pointer",fontWeight:700}}>＋ 死鰻を記録する</button>
-      :<div>
-        <div style={{display:"flex",gap:6,marginBottom:6}}>
-          <input className="inp" type="date" value={date} onChange={e=>setDate(e.target.value)} style={{flex:1,padding:"5px 8px",fontSize:12}}/>
+      ?<button onClick={()=>setShow(true)} style={{width:"100%",padding:"12px",background:"rgba(231,76,60,0.12)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:8,color:"#e74c3c",fontSize:14,cursor:"pointer",fontWeight:700,touchAction:"manipulation"}}>📉 死鰻を記録する</button>
+      :<div style={{background:"rgba(231,76,60,0.05)",border:"1px solid rgba(231,76,60,0.2)",borderRadius:8,padding:12}}>
+        <div style={{fontSize:12,color:"#e74c3c",fontWeight:700,marginBottom:10}}>死鰻記録 — {poolName}</div>
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:11,color:"#7aa885",marginBottom:4}}>日付</div>
+          <input className="inp" type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:"100%",padding:"10px",fontSize:14,boxSizing:"border-box"}}/>
         </div>
-        <div style={{display:"flex",gap:6,alignItems:"center"}}>
-          <input className="inp" type="number" value={count} onChange={e=>setCount(e.target.value)} placeholder="死鰻数(尾)" style={{width:90,padding:"5px 8px",fontSize:12}}/>
-          <select className="inp" value={cause} onChange={e=>setCause(e.target.value)} style={{flex:1,padding:"5px 8px",fontSize:11}}>
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:11,color:"#7aa885",marginBottom:4}}>死鰻数（尾）</div>
+          <input className="inp" type="number" value={count} onChange={e=>setCount(e.target.value)} placeholder="例: 5" style={{width:"100%",padding:"10px",fontSize:16,boxSizing:"border-box"}}/>
+        </div>
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,color:"#7aa885",marginBottom:4}}>原因</div>
+          <select className="inp" value={cause} onChange={e=>setCause(e.target.value)} style={{width:"100%",padding:"10px",fontSize:14,boxSizing:"border-box"}}>
             <option>原因不明</option><option>水質悪化</option><option>疾病</option><option>酸欠</option><option>その他</option>
           </select>
         </div>
-        <div style={{display:"flex",gap:6,marginTop:6}}>
-          <button onClick={save} style={{flex:1,padding:"6px",background:"#e74c3c",border:"none",borderRadius:6,color:"#fff",fontSize:12,cursor:"pointer",fontWeight:700}}>記録する</button>
-          <button onClick={()=>setShow(false)} style={{padding:"6px 10px",background:"none",border:"1px solid #1e3326",borderRadius:6,color:"#7aa885",fontSize:11,cursor:"pointer"}}>閉じる</button>
+        <div style={{display:"flex",gap:8}}>
+          <button onClick={save} disabled={saving} style={{flex:1,padding:"12px",background:saving?"#666":"#e74c3c",border:"none",borderRadius:8,color:"#fff",fontSize:15,cursor:"pointer",fontWeight:700,touchAction:"manipulation"}}>{saving?"保存中...":"✅ 記録する"}</button>
+          <button onClick={()=>{setShow(false);setDerr("");}} style={{padding:"12px 16px",background:"none",border:"1px solid #1e3326",borderRadius:8,color:"#7aa885",fontSize:13,cursor:"pointer",touchAction:"manipulation"}}>閉じる</button>
         </div>
       </div>
     }
