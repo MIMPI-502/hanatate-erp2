@@ -298,20 +298,24 @@ return <div>
 const ListPage=({title,icon,cols,rows,form,setForm,fields,onSave,onDelete,onUpdate,stats,poolOpts})=>{
 const resolveField=f=>f.isPool?{...f,type:"select",opts:poolOpts||f.opts}:f;
 const [show,setShow]=useState(false);
+const [eRow,setERow]=useState(null);
 const [filter,setFilter]=useState("");
 const [toast,setToast]=useState("");
 const t=(m)=>{setToast(m);setTimeout(()=>setToast(""),2500);};
-const save=async()=>{await onSave();setShow(false);t("保存しました");};
+const save=async()=>{if(eRow&&onUpdate){onUpdate(eRow.id,form);}else await onSave();setERow(null);setShow(false);t("保存しました");};
+const hD=(r)=>onDelete&&onDelete(r);
+const hE=(r)=>{setERow(r);setForm({...r});setShow(true);};
 const rows2=filter?rows.filter(r=>Object.values(r).some(v=>String(v||"").includes(filter))):rows;
 return <div>
 <Toast m={toast}/>
-<SH title={icon+" "+title} sub={stats} action={<Btn onClick={()=>setShow(true)}>+ 新規登録</Btn>}/>
+<SH title={icon+" "+title} sub={stats} action={<Btn onClick={()=>{setERow(null);setShow(true);}}>+ 新規登録</Btn>}/>
 <div style={{padding:"0 0 6px"}}><input className="inp" value={filter} onChange={e=>setFilter(e.target.value)} placeholder="絞り込み" style={{width:"100%",boxSizing:"border-box",fontSize:12}}/></div>
-<div className="card"><Tbl cols={cols} rows={R2||rows2} onDelete={onDelete?hD:undefined} onEdit={hE}/></div>
-{show&&<Modal title={title+"登録"} onClose={()=>setShow(false)}>
-{fields.map(f=>{const rf=resolveField(f);return <Fld key={rf.k} l={rf.l}>{rf.type==="select"?<Sel v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}>{(rf.opts||[]).map(o=><option key={o} value={o}>{o}</option>)}</Sel>:rf.type==="textarea"?<Txa v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}/>:<Inp type={rf.type||"text"} step={rf.step} v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})} ph={rf.ph}/>}</Fld>;})}
+<div className="card"><Tbl cols={cols} rows={rows2} onDelete={onDelete?hD:undefined} onEdit={hE}/></div>
+{show&&<Modal title={eRow?title+"編集":title+"登録"} onClose={()=>{setShow(false);setERow(null);}}>
+{fields.map(f=>{const rf=resolveField(f);return <Fld key={rf.k} l={rf.l}>{rf.type==="select"?<Sel v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}>{(rf.opts||[]).map(o=><option key={o} value={o}>{o}</option>)}</Sel>:rf.type==="textarea"?<Txa v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}/>:<Inp type={rf.type||"text"} step={rf.step} v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})} ph={rf.ph}/>}</Fld>;})
+}
 <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:8}}>
-<Btn c="g" onClick={()=>setShow(false)}>キャンセル</Btn><Btn onClick={save}>{eRow?"更新":"保存"}</Btn>
+<Btn c="g" onClick={()=>{setShow(false);setERow(null);}}>キャンセル</Btn><Btn onClick={save}>{eRow?"更新":"保存"}</Btn>
 </div>
 </Modal>}
 </div>;
