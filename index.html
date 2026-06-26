@@ -54,7 +54,7 @@ input,select,textarea,button{font-family:inherit;}
 <script type="text/babel">
 const {useState,useEffect}=React;
 const SB_URL="https://xmzsszuteyuumspyzsaq.supabase.co";
-const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0enNzenV0ZXl1dW1zcHl6c2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTM3MTYsImV4cCI6MjA2MDk2OTcxNn0.Jz3MmPuJZ0J7YqG0QzPzMfRMhQJCpTGJfCFe6bVa2IM";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtenNzenV0ZXl1dW1zcHl6c2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NDY0NjEsImV4cCI6MjA5NzMyMjQ2MX0.48SaeSrIiVElH-RUTXEgjBga07WACtazXqT8_qvdztA";
 const H={"Content-Type":"application/json",apikey:SB_KEY,Authorization:"Bearer "+SB_KEY};
 const db={
   get:async(t)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}?select=*&order=created_at.desc`,{headers:H});return r.ok?await r.json():[];},
