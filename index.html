@@ -58,11 +58,11 @@ const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const H={"Content-Type":"application/json",apikey:SB_KEY,Authorization:"Bearer "+SB_KEY};
 const db={
   get:async(t)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}?select=*&order=created_at.desc`,{headers:H});return r.ok?await r.json():[];},
-  ins:async(t,d)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"return=representation"},body:JSON.stringify(d)});return r.ok;},
+  ins:async(t,d)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"return=representation"},body:JSON.stringify(d)});if(!r.ok){const e=await r.text();console.error("ins error",t,e);}return r.ok;},
   ups:async(t,d,col="id")=>{
-    // まずidで既存行を削除してから挿入（確実なupsert）
     await fetch(`${SB_URL}/rest/v1/${t}?${col}=eq.${d[col]}`,{method:"DELETE",headers:H});
     const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"return=representation"},body:JSON.stringify(d)});
+    if(!r.ok){const e=await r.text();console.error("ups error",t,r.status,e);}
     return r.ok;
   },
 };
@@ -116,13 +116,19 @@ const PoolEdit=({pool,setPools})=>{
   const [kg,setKg]=useState(pool.kg||pool.weight||0);
   const [cap,setCap]=useState(pool.cap||pool.capacity||0);
   const [saved,setSaved]=useState(false);
+  const [err,setErr]=useState("");
   const save=async()=>{
-    setPools(prev=>prev.map(p=>p.id===pool.id?{...p,cur:Number(cur),kg:Number(kg),cap:Number(cap)}:p));
-    await db.ups("erp_pools",{id:pool.id,name:pool.name,current:Number(cur),weight:Number(kg),capacity:Number(cap),status:pool.st||pool.status||"normal"});
-    setShow(false);setSaved(true);setTimeout(()=>setSaved(false),2000);
+    setErr("");
+    try{
+      setPools(prev=>prev.map(p=>p.id===pool.id?{...p,cur:Number(cur),kg:Number(kg),cap:Number(cap)}:p));
+      const ok=await db.ups("erp_pools",{id:pool.id,name:pool.name,current:Number(cur),weight:Number(kg),capacity:Number(cap),status:pool.st||pool.status||"normal"});
+      if(ok){setShow(false);setSaved(true);setTimeout(()=>setSaved(false),2000);}
+      else{setErr("保存失敗。再度お試しください");}
+    }catch(e){setErr("エラー: "+e.message);}
   };
   return <div style={{marginBottom:8}}>
     {saved&&<div style={{textAlign:"center",color:"#2ecc71",fontSize:11,marginBottom:4}}>✅ 更新しました</div>}
+    {err&&<div style={{textAlign:"center",color:"#e74c3c",fontSize:11,marginBottom:4}}>❌ {err}</div>}
     {!show
       ?<button onClick={()=>setShow(true)} style={{width:"100%",padding:"4px",background:"rgba(46,204,113,0.08)",border:"1px solid rgba(46,204,113,0.2)",borderRadius:6,color:"#2ecc71",fontSize:11,cursor:"pointer"}}>✏️ 在鰻数・kg・容量を編集</button>
       :<div style={{background:"rgba(46,204,113,0.05)",border:"1px solid rgba(46,204,113,0.2)",borderRadius:8,padding:"10px"}}>
@@ -149,12 +155,16 @@ const DeathInput=({poolId,poolName,deaths,setDeaths})=>{
   const [cause,setCause]=useState("原因不明");
   const [show,setShow]=useState(false);
   const [saved,setSaved]=useState(false);
+  const [derr,setDerr]=useState("");
   const save=async()=>{
     if(!count)return;
-    const row={date,pool_id:poolId,count:Number(count),cause,staff:"",memo:""};
-    setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);
-    await db.ins("erp_deaths",row);
-    setCount("");setSaved(true);setTimeout(()=>setSaved(false),2000);
+    setDerr("");
+    try{
+      const row={date,pool_id:poolId,count:Number(count),cause,staff:"",memo:""};
+      const ok=await db.ins("erp_deaths",row);
+      if(ok){setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);setCount("");setSaved(true);setTimeout(()=>setSaved(false),2000);}
+      else{setDerr("保存失敗。再度お試しください");}
+    }catch(e){setDerr("エラー: "+e.message);}
   };
   const todayCount=deaths.filter(d=>d.pool_id===poolId&&d.date===td()).reduce((s,d)=>s+(d.count||0),0);
   const monthCount=deaths.filter(d=>d.pool_id===poolId&&d.date&&d.date.slice(0,7)===td().slice(0,7)).reduce((s,d)=>s+(d.count||0),0);
@@ -166,6 +176,7 @@ const DeathInput=({poolId,poolName,deaths,setDeaths})=>{
       <span style={{color:"#4a7055"}}>累計: {fmt(totalCount)}尾</span>
     </div>
     {saved&&<div style={{textAlign:"center",color:"#2ecc71",fontSize:11,marginBottom:4}}>✅ 記録しました</div>}
+    {derr&&<div style={{textAlign:"center",color:"#e74c3c",fontSize:11,marginBottom:4}}>❌ {derr}</div>}
     {!show
       ?<button onClick={()=>setShow(true)} style={{width:"100%",padding:"5px",background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.3)",borderRadius:6,color:"#e74c3c",fontSize:11,cursor:"pointer",fontWeight:700}}>＋ 死鰻を記録する</button>
       :<div>
