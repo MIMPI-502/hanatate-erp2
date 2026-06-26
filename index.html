@@ -76,14 +76,24 @@ const POOLS=[{id:"P01",name:"第1池",cap:10000,cur:8200,kg:820,st:"normal"},{id
 
 const dlCSV=(filename,cols,rows)=>{
   const header=cols.map(c=>c.l).join(",");
-  const body=rows.map(r=>cols.map(c=>{const v=c.r?c.r(r):(r[c.k]??"");return `"${String(v).replace(/"/g,'""')}"`}).join(",")).join("\n");
+  const body=rows.map(r=>cols.map(c=>{const v=c.r?c.r(r):(r[c.k]??"");return `"${String(v).replace(/"/g,'""')}"`;}).join(",")).join("\n");
   const bom="\uFEFF";
-  const blob=new Blob([bom+header+"\n"+body],{type:"text/csv;charset=utf-8;"});
-  const url=URL.createObjectURL(blob);
+  const csv=bom+header+"\n"+body;
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
   const a=document.createElement("a");
-  a.href=url;a.download=filename;a.click();
-  URL.revokeObjectURL(url);
+  if(isIOS){
+    a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  } else {
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+    a.href=URL.createObjectURL(blob);
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  }
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 };
+
 const dlExcel=(filename,cols,rows,sheetName="データ")=>{
   const header=cols.map(c=>c.l);
   const body=rows.map(r=>cols.map(c=>r[c.k]??''));
