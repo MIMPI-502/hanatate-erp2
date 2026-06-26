@@ -262,24 +262,57 @@ const ListPage=({title,icon,cols,rows,form,setForm,fields,onSave,stats,poolOpts}
 // 監査
 const AuditPage=({pools,deaths,medicines,shipping,water,haccp})=>{
   const [mon,setMon]=useState(td().slice(0,7));
+  const [tab,setTab]=useState("shipping");
   const f=arr=>arr.filter(r=>(r.date||r.use_date||"").slice(0,7)===mon);
   const actMeds=medicines.filter(m=>m.status==="active");
+  const pName=id=>(pools.find(p=>p.id===id)||{}).name||id;
+  const tabStyle=(t)=>({padding:"7px 14px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,
+    background:tab===t?"#2ecc71":"rgba(46,204,113,0.08)",color:tab===t?"#0a0f0d":"#7aa885"});
+  const sections={
+    shipping:{label:"📦 出荷記録",color:"#2ecc71",data:f(shipping),
+      cols:[{k:"date",l:"日付"},{k:"destination",l:"出荷先"},{k:"pool_id",l:"池",r:(_,r)=>pName(r.pool_id)},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"重量",r:v=>fmt(v)+"kg"},{k:"price",l:"金額",r:v=>"¥"+fmt(v)}]},
+    deaths:{label:"📉 死鰻記録",color:"#e74c3c",data:f(deaths),
+      cols:[{k:"date",l:"日付"},{k:"pool_id",l:"池",r:(_,r)=>pName(r.pool_id)},{k:"count",l:"死鰻数",r:v=><span style={{color:"#e74c3c",fontWeight:700}}>{fmt(v)}尾</span>},{k:"cause",l:"原因"},{k:"staff",l:"担当"}]},
+    medicines:{label:"💊 薬品記録",color:"#f0a500",data:f(medicines),
+      cols:[{k:"use_date",l:"投薬日"},{k:"name",l:"薬品名"},{k:"pool_id",l:"池",r:(_,r)=>pName(r.pool_id)},{k:"amount",l:"使用量"},{k:"purpose",l:"目的"},{k:"withdraw_days",l:"休薬日数",r:v=>v+"日"},{k:"clear_date",l:"休薬満了"},{k:"status",l:"状態",r:v=><Bdg c={v==="active"?"y":"g"}>{v==="active"?"投薬中":"完了"}</Bdg>}]},
+    haccp:{label:"✅ HACCP記録",color:"#2ecc71",data:f(haccp),
+      cols:[{k:"date",l:"日付"},{k:"check_type",l:"点検種別"},{k:"result",l:"結果",r:v=><Bdg c={v==="合格"?"g":"r"}>{v}</Bdg>},{k:"staff",l:"担当"},{k:"memo",l:"メモ"}]},
+  };
+  const cur=sections[tab];
   return <div>
     <SH title="🔍 監査対応" sub="行政・第三者監査向け集計"
       action={<input type="month" value={mon} onChange={e=>setMon(e.target.value)} className="inp" style={{width:"auto"}}/>}/>
-    <div className="gridStat">
-      {[["出荷",f(shipping).length,"#2ecc71"],["死鰻",f(deaths).length,"#e74c3c"],["水質",f(water).length,"#3498db"],["薬品",f(medicines).length,"#f0a500"],["HACCP",f(haccp).length,"#2ecc71"]].map(([l,v,c])=>(
-        <div className="stat" key={l}><div style={{fontSize:11,color:"#7aa885",marginBottom:4}}>{l}記録</div><div style={{fontSize:22,fontWeight:800,color:c,fontFamily:"monospace"}}>{v}<span style={{fontSize:11}}>件</span></div></div>
+    <div className="gridStat" style={{marginBottom:16}}>
+      {[["出荷",f(shipping).length,"#2ecc71","shipping"],["死鰻",f(deaths).length,"#e74c3c","deaths"],["水質",f(water).length,"#3498db","water"],["薬品",f(medicines).length,"#f0a500","medicines"],["HACCP",f(haccp).length,"#2ecc71","haccp"]].map(([l,v,c,k])=>(
+        <div className="stat" key={l} style={{cursor:"pointer",border:tab===k?"1px solid "+c:"1px solid transparent"}} onClick={()=>k!=="water"&&setTab(k)}>
+          <div style={{fontSize:11,color:"#7aa885",marginBottom:4}}>{l}記録</div>
+          <div style={{fontSize:22,fontWeight:800,color:c,fontFamily:"monospace"}}>{v}<span style={{fontSize:11}}>件</span></div>
+        </div>
+      ))}
+    </div>
+    <div style={{display:"flex",gap:8,marginBottom:12,flexWrap:"wrap"}}>
+      {Object.entries(sections).map(([k,s])=>(
+        <button key={k} style={tabStyle(k)} onClick={()=>setTab(k)}>{s.label}</button>
       ))}
     </div>
     <div className="card" style={{marginBottom:16}}>
-      <div style={{fontWeight:700,marginBottom:10,fontSize:13}}>投薬中（出荷禁止）</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{fontWeight:700,fontSize:13,color:cur.color}}>{cur.label} — {mon} ({cur.data.length}件)</div>
+        <CSVBtn filename={`監査_${cur.label.replace(/[📦📉💊✅ ]/g,"")}_${mon}.csv`} cols={cur.cols.filter(c=>typeof c.r!=="function"||true).map(c=>({...c,r:undefined}))} rows={cur.data}/>
+      </div>
+      {cur.data.length===0
+        ?<div style={{textAlign:"center",padding:24,color:"#4a7055",fontSize:13}}>📋 {mon} の{cur.label}はありません</div>
+        :<Tbl cols={cur.cols} rows={cur.data}/>
+      }
+    </div>
+    <div className="card" style={{marginBottom:16}}>
+      <div style={{fontWeight:700,marginBottom:10,fontSize:13}}>⚠️ 投薬中（出荷禁止）</div>
       {actMeds.length===0?<div style={{color:"#2ecc71",fontSize:13}}>✅ 投薬中なし（出荷可能）</div>:actMeds.map(m=>(
-        <div key={m.id} style={{padding:"7px 0",borderBottom:"1px solid #1e3326",fontSize:12}}>⚠️ {m.name} — 休薬満了: {fd(m.clear_date)}</div>
+        <div key={m.id} style={{padding:"7px 0",borderBottom:"1px solid #1e3326",fontSize:12}}>⚠️ {m.name} — 池: {pName(m.pool_id)} — 休薬満了: {fd(m.clear_date)}</div>
       ))}
     </div>
     <div className="card">
-      <div style={{fontWeight:700,marginBottom:10,fontSize:13}}>池別在鰻</div>
+      <div style={{fontWeight:700,marginBottom:10,fontSize:13}}>🏊 池別在鰻</div>
       <Tbl cols={[{k:"name",l:"池名"},{k:"cur",l:"在鰻",r:v=>fmt(v)+"尾"},{k:"kg",l:"重量",r:v=>fmt(v)+"kg"},{k:"st",l:"状態",r:v=><Bdg c={v==="warning"?"y":"g"}>{v==="warning"?"要注意":"正常"}</Bdg>}]} rows={pools}/>
     </div>
   </div>;
