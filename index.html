@@ -376,13 +376,16 @@ const App=()=>{
       db.get("erp_water_quality"),db.get("erp_deaths"),db.get("erp_medicines"),db.get("erp_processing"),
       db.get("erp_haccp"),Promise.resolve([]),Promise.resolve([])
     ]).then(([p,si,sh,fe,wa,de,me,pr,ha,fi,sb])=>{
-      if(p&&p.length)setPools(p);
+      if(p&&p.length){
+        setPools(p.map(x=>({...x,cur:x.cur||x.current||0,kg:x.kg||x.weight||0,cap:x.cap||x.capacity||0,st:x.st||x.status||"normal"})));
+      } else {
+        Promise.all(POOLS.map(pool=>db.ups("erp_pools",{id:pool.id,name:pool.name,current:pool.cur,weight:pool.kg,capacity:pool.cap,status:pool.st})));
+      }
       if(si&&si.length)setSI(si);if(sh&&sh.length)setShipping(sh);
       if(fe&&fe.length)setFeeding(fe);if(wa&&wa.length)setWater(wa);
       if(de&&de.length)setDeaths(de);if(me&&me.length)setMed(me);
       if(pr&&pr.length)setProc(pr);if(ha&&ha.length)setHaccp(ha);
-      
-    }).catch(e=>console.log(e)).finally(()=>setLoading(false));
+    }).catch(e=>console.error("load error",e)).finally(()=>setLoading(false));
   },[]);
 
   const pOpts=pools.map(p=>p.id);
