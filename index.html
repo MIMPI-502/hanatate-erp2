@@ -313,7 +313,7 @@ const AuditPage=({pools,deaths,medicines,shipping,water,haccp})=>{
     <div className="card" style={{marginBottom:16}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
         <div style={{fontWeight:700,fontSize:13,color:cur.color}}>{cur.label} — {mon} ({cur.data.length}件)</div>
-        <CSVBtn filename={`監査_${cur.label.replace(/[📦📉💊✅ ]/g,"")}_${mon}.csv`} cols={cur.cols.filter(c=>typeof c.r!=="function"||true).map(c=>({...c,r:undefined}))} rows={cur.data}/>
+        <CSVBtn filename={`監査_${cur.label.replace(/[📦📉💊✅ ]/g,"")}_${mon}.csv`} cols={cur.cols} rows={cur.data}/>
       </div>
       {cur.data.length===0
         ?<div style={{textAlign:"center",padding:24,color:"#4a7055",fontSize:13}}>📋 {mon} の{cur.label}はありません</div>
@@ -392,7 +392,7 @@ const App=()=>{
       cols={[{k:"date",l:"日付"},{k:"supplier",l:"仕入先"},{k:"pool_id",l:"池",r:pName},{k:"lot",l:"ロット"},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"staff",l:"担当"}]}
       rows={stockIn} form={fStock}
       setForm={setFStock} fields={[{k:"date",l:"入荷日",type:"date"},{k:"supplier",l:"仕入先",ph:"福岡淡水株式会社"},{k:"pool_id",l:"池",isPool:true},{k:"lot",l:"ロット",ph:"L2026-001"},{k:"qty",l:"尾数",type:"number"},{k:"kg",l:"重量(kg)",type:"number"},{k:"staff",l:"担当者",ph:"昭次郎"}]}
-      onSave={saveStock} poolOpts={pOpts} stats={`計${stockIn.length}件`}/>,
+      onSave={saveStock} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{stockIn.length}件</span><CSVBtn filename={`池入れ記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'supplier',l:'仕入先'},{k:'pool_id',l:'池ID'},{k:'lot',l:'ロット'},{k:'qty',l:'尾数'},{k:'kg',l:'重量kg'},{k:'avg_size',l:'平均サイズ'},{k:'staff',l:'担当'}]} rows={stockIn}/></span>}/>,
     shipping:<ListPage title="出荷管理" icon="📦"
       cols={[{k:"date",l:"日付"},{k:"destination",l:"出荷先"},{k:"pool_id",l:"池",r:pName},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"price",l:"金額",r:v=>"¥"+fmt(v)}]}
       rows={shipping} form={fShip}
