@@ -58,12 +58,12 @@ const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 const H={"Content-Type":"application/json",apikey:SB_KEY,Authorization:"Bearer "+SB_KEY};
 const db={
   get:async(t)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}?select=*&order=created_at.desc`,{headers:H});return r.ok?await r.json():[];},
-  ins:async(t,d)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"return=representation"},body:JSON.stringify(d)});if(!r.ok){const e=await r.text();console.error("ins error",t,e);}return r.ok;},
+  ins:async(t,d)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"return=minimal"},body:JSON.stringify(d)});if(!r.ok){const e=await r.text();console.error("ins error",t,r.status,e);return {ok:false,err:e};}return {ok:true};},
   ups:async(t,d,col="id")=>{
     await fetch(`${SB_URL}/rest/v1/${t}?${col}=eq.${d[col]}`,{method:"DELETE",headers:H});
-    const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"return=representation"},body:JSON.stringify(d)});
-    if(!r.ok){const e=await r.text();console.error("ups error",t,r.status,e);}
-    return r.ok;
+    const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"return=minimal"},body:JSON.stringify(d)});
+    if(!r.ok){const e=await r.text();console.error("ups error",t,r.status,e);return {ok:false,err:e};}
+    return {ok:true};
   },
 };
 const fmt=n=>n!=null?Number(n).toLocaleString():"—";
@@ -122,9 +122,13 @@ const PoolEdit=({pool,setPools})=>{
     if(saving)return;
     setSaving(true);setErr("");
     try{
-      const ok=await db.ups("erp_pools",{id:pool.id,name:pool.name,current:Number(cur),weight:Number(kg),capacity:Number(cap),status:pool.st||pool.status||"normal"});
-      if(ok){setPools(prev=>prev.map(p=>p.id===pool.id?{...p,cur:Number(cur),current:Number(cur),kg:Number(kg),weight:Number(kg),cap:Number(cap),capacity:Number(cap)}:p));setShow(false);setSaved(true);setTimeout(()=>setSaved(false),3000);}
-      else{setErr("保存に失敗しました");}
+      const res=await db.ups("erp_pools",{id:pool.id,name:pool.name,current:Number(cur),weight:Number(kg),capacity:Number(cap),status:pool.st||pool.status||"normal"});
+      if(res.ok){setPools(prev=>prev.map(p=>p.id===pool.id?{...p,cur:Number(cur),current:Number(cur),kg:Number(kg),weight:Number(kg),cap:Number(cap),capacity:Number(cap)}:p));setShow(false);setSaved(true);setTimeout(()=>setSaved(false),3000);}
+      else{
+        let msg="保存失敗";
+        try{const j=JSON.parse(res.err);msg=j.message||j.hint||res.err;}catch(e2){msg=res.err||"不明なエラー";}
+        setErr(msg.slice(0,80));
+      }
     }catch(e){setErr("エラー: "+e.message);}
     setSaving(false);
   };
@@ -163,10 +167,14 @@ const DeathInput=({poolId,poolName,deaths,setDeaths})=>{
     if(!count||saving)return;
     setSaving(true);setDerr("");
     try{
-      const row={id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2),date,pool_id:poolId,count:Number(count),cause,staff:"",memo:""};
-      const ok=await db.ins("erp_deaths",row);
-      if(ok){setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);setCount("");setShow(false);setSaved(true);setTimeout(()=>setSaved(false),3000);}
-      else{setDerr("保存に失敗しました");}
+      const row={date,pool_id:poolId,count:Number(count),cause,staff:"",memo:""};
+      const res=await db.ins("erp_deaths",row);
+      if(res.ok){setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);setCount("");setShow(false);setSaved(true);setTimeout(()=>setSaved(false),3000);}
+      else{
+        let msg="保存失敗";
+        try{const j=JSON.parse(res.err);msg=j.message||j.hint||res.err;}catch(e2){msg=res.err||"不明なエラー";}
+        setDerr(msg.slice(0,80));
+      }
     }catch(e){setDerr("エラー: "+e.message);}
     setSaving(false);
   };
@@ -401,14 +409,14 @@ const App=()=>{
   const [fProc,setFProc]=useState({date:td(),product:"蒲焼き（1尾）",raw_kg:"",yield_kg:"",qty:"",staff:""});
   const [fHaccp,setFHaccp]=useState({date:td(),check_type:"入荷検品",result:"合格",staff:"",memo:""});
 
-  const saveStock=async()=>{const ok=await db.ins("erp_stock_in",{...fStock,id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)});if(ok){setSI(p=>[{...fStock,id:"S"+Date.now()},...p]);setFStock({date:td(),supplier:"",pool_id:"P01",lot:"",qty:"",kg:"",avg_size:"",staff:""});}};
-  const saveShip=async()=>{const ok=await db.ins("erp_shipping",{...fShip,id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)});if(ok){setShipping(p=>[{...fShip,id:"SH"+Date.now()},...p]);setFShip({date:td(),destination:"",pool_id:"P01",qty:"",kg:"",price:""});}};
-  const saveFeed=async()=>{const ok=await db.ins("erp_feeding",{...fFeed,id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)});if(ok){setFeeding(p=>[{...fFeed,id:"F"+Date.now()},...p]);setFFeed({date:td(),pool_id:"P01",feed_type:"配合飼料A",amount_kg:"",staff:""});}};
-  const saveWater=async()=>{const ok=await db.ins("erp_water_quality",{...fWater,id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)});if(ok){setWater(p=>[{...fWater,id:"W"+Date.now()},...p]);setFWater({date:td(),pool_id:"P01",temp:"",ph:"",do_level:"",nh3:"",no2:"",salt:"",exchange:"",staff:""});}};
-  const saveDeath=async()=>{const ok=await db.ins("erp_deaths",{...fDeath,id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)});if(ok){setDeaths(p=>[{...fDeath,id:"D"+Date.now()},...p]);setFDeath({date:td(),pool_id:"P01",count:"",cause:"",staff:""});}};
-  const saveMed=async()=>{const d={...fMed,status:"active",id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)};const ok=await db.ins("erp_medicines",d);if(ok){setMed(p=>[{...d,id:"M"+Date.now()},...p]);setFMed({name:"",pool_id:"P01",use_date:td(),amount:"",purpose:"",withdraw_days:"",clear_date:"",staff:""});}};
-  const saveProc=async()=>{const ok=await db.ins("erp_processing",{...fProc,id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)});if(ok){setProc(p=>[{...fProc,id:"P"+Date.now()},...p]);setFProc({date:td(),product:"蒲焼き（1尾）",raw_kg:"",yield_kg:"",qty:"",staff:""});}};
-  const saveHaccp=async()=>{const ok=await db.ins("erp_haccp",{...fHaccp,id:crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)});if(ok){setHaccp(p=>[{...fHaccp,id:"H"+Date.now()},...p]);setFHaccp({date:td(),check_type:"入荷検品",result:"合格",staff:"",memo:""});}};
+  const saveStock=async()=>{const res=await db.ins("erp_stock_in",fStock);if(res.ok){setSI(p=>[{...fStock,id:"S"+Date.now()},...p]);setFStock({date:td(),supplier:"",pool_id:"P01",lot:"",qty:"",kg:"",avg_size:"",staff:""});}};
+  const saveShip=async()=>{const res=await db.ins("erp_shipping",fShip);if(res.ok){setShipping(p=>[{...fShip,id:"SH"+Date.now()},...p]);setFShip({date:td(),destination:"",pool_id:"P01",qty:"",kg:"",price:""});}};
+  const saveFeed=async()=>{const res=await db.ins("erp_feeding",fFeed);if(res.ok){setFeeding(p=>[{...fFeed,id:"F"+Date.now()},...p]);setFFeed({date:td(),pool_id:"P01",feed_type:"配合飼料A",amount_kg:"",staff:""});}};
+  const saveWater=async()=>{const res=await db.ins("erp_water_quality",fWater);if(res.ok){setWater(p=>[{...fWater,id:"W"+Date.now()},...p]);setFWater({date:td(),pool_id:"P01",temp:"",ph:"",do_level:"",nh3:"",no2:"",salt:"",exchange:"",staff:""});}};
+  const saveDeath=async()=>{const res=await db.ins("erp_deaths",fDeath);if(res.ok){setDeaths(p=>[{...fDeath,id:"D"+Date.now()},...p]);setFDeath({date:td(),pool_id:"P01",count:"",cause:"",staff:""});}};
+  const saveMed=async()=>{const d={...fMed,status:"active"};const res=await db.ins("erp_medicines",d);if(res.ok){setMed(p=>[{...d,id:"M"+Date.now()},...p]);setFMed({name:"",pool_id:"P01",use_date:td(),amount:"",purpose:"",withdraw_days:"",clear_date:"",staff:""});}};
+  const saveProc=async()=>{const res=await db.ins("erp_processing",fProc);if(res.ok){setProc(p=>[{...fProc,id:"P"+Date.now()},...p]);setFProc({date:td(),product:"蒲焼き（1尾）",raw_kg:"",yield_kg:"",qty:"",staff:""});}};
+  const saveHaccp=async()=>{const res=await db.ins("erp_haccp",fHaccp);if(res.ok){setHaccp(p=>[{...fHaccp,id:"H"+Date.now()},...p]);setFHaccp({date:td(),check_type:"入荷検品",result:"合格",staff:"",memo:""});}};
 
   const pages={
     dashboard:<Dashboard pools={pools} shipping={shipping} deaths={deaths} finance={[]} setPage={setPg}/>,
