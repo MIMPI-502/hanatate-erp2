@@ -185,7 +185,7 @@ const Dashboard=({pools,setPools,shipping,deaths,setDeaths,finance,setPage})=>{
   return <div>
     <SH title="ダッシュボード" sub={td()+" 現在"}/>
     <div className="gridStat">
-      {[["🐍","総在鰻",fmt(pools.reduce((s,p)=>s+(p.cur||p.current||0),0))+"尾","#2ecc71","stock"],
+      {[["","総在鰻",fmt(pools.reduce((s,p)=>s+(p.cur||p.current||0),0))+"尾","#2ecc71","stock"],
         ["🏊","管理池数",pools.length+"池","#2ecc71","stock"],
         ["📦","出荷件数",shipping.length+"件","#2ecc71","shipping"],
 
@@ -269,7 +269,7 @@ const AuditPage=({pools,deaths,medicines,shipping,water,haccp})=>{
   </div>;
 };
 
-const NAV=[["dashboard","📊","ダッシュボード"],["stock","🐍","池入れ・在鰻"],["shipping","📦","出荷"],["feeding","🌾","給餌"],["processing","🏭","加工"],["water","💧","水質"],["deaths","📉","死鰻"],["medicine","💊","薬品"],["haccp","✅","HACCP"],["permit","📋","許可枠"],["audit","🔍","監査"]];
+const NAV=[["dashboard","📊","ダッシュボード"],["stock","","池入れ・在鰻"],["shipping","📦","出荷"],["feeding","🌾","給餌"],["processing","🏭","加工"],["water","💧","水質"],["deaths","📉","死鰻"],["medicine","💊","薬品"],["haccp","✅","HACCP"],["permit","📋","許可枠"],["audit","🔍","監査"]];
 
 const App=()=>{
   const [pg,setPg]=useState("dashboard");
@@ -306,7 +306,7 @@ const App=()=>{
 
   const pages={
     dashboard:<Dashboard pools={pools} shipping={shipping} deaths={deaths} finance={[]} setPage={setPg}/>,
-    stock:<ListPage title="池入れ・在鰻管理" icon="🐍"
+    stock:<ListPage title="池入れ・在鰻管理" icon=""
       cols={[{k:"date",l:"日付"},{k:"supplier",l:"仕入先"},{k:"pool_id",l:"池",r:pName},{k:"lot",l:"ロット"},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"staff",l:"担当"}]}
       rows={stockIn} form={{date:td(),supplier:"",pool_id:"P01",lot:"",qty:"",kg:"",avg_size:"",staff:""}}
       setForm={()=>{}} fields={[{k:"date",l:"入荷日",type:"date"},{k:"supplier",l:"仕入先",ph:"福岡淡水株式会社"},{k:"pool_id",l:"池",type:"select",opts:["P01","P02","P03","P04","P05","P06","P07","P08","P09","P10","P11","P12","P13"]},{k:"lot",l:"ロット",ph:"L2026-001"},{k:"qty",l:"尾数",type:"number"},{k:"kg",l:"重量(kg)",type:"number"},{k:"staff",l:"担当者",ph:"昭次郎"}]}
@@ -372,7 +372,7 @@ const App=()=>{
   };
 
   if(loading)return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16}}>
-    <div style={{fontSize:40}}>🐍</div><div style={{color:"#7aa885",fontSize:14}}>花立山養鰻 ERP v2 起動中...</div>
+    <div style={{fontSize:40}}></div><div style={{color:"#7aa885",fontSize:14}}>花立山養鰻 ERP v2 起動中...</div>
   </div>;
 
   return <div>
