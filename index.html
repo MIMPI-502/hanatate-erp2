@@ -244,24 +244,28 @@ const SH=({title,sub,action})=>(
   <div className="sec-h"><div><div style={{fontSize:16,fontWeight:800}}>{title}</div>{sub&&<div style={{fontSize:11,color:"#7aa885",marginTop:2}}>{sub}</div>}</div>{action}</div>
 );
 
+// 水質アラート
+const WaterAlert=({water})=>{
+  const today=water.filter(w=>w.date===td());
+  const alerts=[];
+  today.forEach(w=>{
+    if(w.temp&&(Number(w.temp)<20||Number(w.temp)>32))alerts.push(`⚠️ ${w.pool_id} 水温異常: ${w.temp}℃`);
+    if(w.ph&&(Number(w.ph)<6.5||Number(w.ph)>8.5))alerts.push(`⚠️ ${w.pool_id} pH異常: ${w.ph}`);
+    if(w.nh3&&Number(w.nh3)>0.5)alerts.push(`⚠️ ${w.pool_id} NH3高値: ${w.nh3}`);
+    if(w.do_level&&Number(w.do_level)<5)alerts.push(`⚠️ ${w.pool_id} DO低値: ${w.do_level}mg/L`);
+  });
+  if(alerts.length===0)return null;
+  return <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:8,padding:12,marginBottom:12}}>
+    <div style={{fontWeight:700,color:"#e74c3c",marginBottom:6,fontSize:13}}>🚨 水質アラート（本日）</div>
+    {alerts.map((a,i)=><div key={i} style={{fontSize:12,color:"#e74c3c",padding:"2px 0"}}>{a}</div>)}
+  </div>;
+};
+
 // ダッシュボード
 const Dashboard=({pools,setPools,shipping,deaths,setDeaths,finance,setPage})=>{
   return <div>
     <SH title="ダッシュボード" sub={td()+" 現在"}/>
-    {(()=>{
-      const today=water.filter(w=>w.date===td());
-      const alerts=[];
-      today.forEach(w=>{
-        if(w.temp&&(Number(w.temp)<20||Number(w.temp)>32))alerts.push(`⚠️ ${w.pool_id} 水温異常: ${w.temp}℃`);
-        if(w.ph&&(Number(w.ph)<6.5||Number(w.ph)>8.5))alerts.push(`⚠️ ${w.pool_id} pH異常: ${w.ph}`);
-        if(w.nh3&&Number(w.nh3)>0.5)alerts.push(`⚠️ ${w.pool_id} NH3高値: ${w.nh3}`);
-        if(w.do_level&&Number(w.do_level)<5)alerts.push(`⚠️ ${w.pool_id} DO低値: ${w.do_level}mg/L`);
-      });
-      return alerts.length>0?<div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:8,padding:12,marginBottom:12}}>
-        <div style={{fontWeight:700,color:"#e74c3c",marginBottom:6,fontSize:13}}>🚨 水質アラート（本日）</div>
-        {alerts.map((a,i)=><div key={i} style={{fontSize:12,color:"#e74c3c",padding:"2px 0"}}>{a}</div>)}
-      </div>:null;
-    })()}
+    {WaterAlert({water})}
     <div className="gridStat">
       {[["","総在鰻",fmt(pools.reduce((s,p)=>s+(p.cur||p.current||0),0))+"尾","#2ecc71","stock"],
         ["🏊","管理池数",pools.length+"池","#2ecc71","stock"],
