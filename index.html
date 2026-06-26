@@ -213,7 +213,7 @@ const Dashboard=({pools,setPools,shipping,deaths,setDeaths,finance,setPage})=>{
         </div>
       ))}
     </div>
-    <SH title="池別状況" action={<CSVBtn filename={`池別状況_${td()}.csv`} cols={[{k:"name",l:"池名"},{k:"cur",l:"在鰻数"},{k:"kg",l:"重量kg"},{k:"cap",l:"容量"},{k:"st",l:"状態"}]} rows={pools}/>}/>
+    <SH title="池別状況" action={<CSVBtn filename={`池別状況_${td()}.csv`} cols={[{k:"name",l:"池名"},{k:"cur",l:"在鰻数(尾)",r:p=>p.cur||p.current||0},{k:"kg",l:"重量(kg)",r:p=>p.kg||p.weight||0},{k:"cap",l:"容量(尾)",r:p=>p.cap||p.capacity||0},{k:"pct",l:"稼働率(%)",r:p=>Math.round((p.cur||p.current||0)/Math.max(p.cap||p.capacity||1,1)*100)},{k:"st",l:"状態",r:p=>(p.st||p.status)==="warning"?"要注意":"正常"}]} rows={pools.map(p=>({...p,pct:Math.round((p.cur||p.current||0)/Math.max(p.cap||p.capacity||1,1)*100)}))}/>}/>
     <div className="gridPool">
       {pools.map(p=>{const cur=p.cur||p.current||0;const cap=p.cap||p.capacity||1;const pct=Math.round(cur/cap*100);const warn=p.st==="warning"||p.status==="warning";return(
         <div className="card" key={p.id}>
