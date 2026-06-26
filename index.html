@@ -225,7 +225,7 @@ const Fld=({l,children})=><div className="fld"><label className="lbl">{l}</label
 const Bdg=({c,children})=><span className={`badge b${c}`}>{children}</span>;
 const Tbl=({cols,rows,empty="データなし",onDelete})=>(
   <div style={{overflowX:"auto"}}><table className="tbl"><thead><tr>{cols.map(c=><th key={c.k}>{c.l}</th>)}{onDelete&&<th>削除</th>}</tr></thead>
-  <tbody>{rows.length===0?<tr><td colSpan={cols.length+(onDelete?1:0)} style={{padding:20,textAlign:"center",color:"#4a7055"}}>{empty}</td></tr>:rows.map((r,i)=><tr key={i} style={{color:"#e8f5ec"}}>{cols.map(c=><td key={c.k}>{c.r?c.r(r[c.k],r):r[c.k]??"—"}</td>)}{onDelete&&<td><button onClick={()=>{if(window.confirm("削除しますか？"))onDelete(r);}} style={{padding:"3px 8px",background:"rgba(231,76,60,0.2)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:4,color:"#e74c3c",fontSize:11,cursor:"pointer"}}>🗑️</button></td>}</tr>)}</tbody>
+  <tbody>{rows.length===0?<tr><td colSpan={cols.length+(onDelete?1:0)} style={{padding:20,textAlign:"center",color:"#4a7055"}}>{empty}</td></tr>:rows.map((r,i)=><tr key={i} style={{color:"#e8f5ec"}}>{cols.map(c=><td key={c.k}>{c.r?c.r(r[c.k],r):r[c.k]??"—"}</td>)}{onDelete&&<td>{r.id&&<button onClick={()=>{if(window.confirm("この記録を削除しますか？"))onDelete(r);}} style={{padding:"4px 10px",background:"rgba(231,76,60,0.2)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:4,color:"#e74c3c",fontSize:12,cursor:"pointer",touchAction:"manipulation"}}>🗑️削除</button>}</td>}</tr>)}</tbody>
   </table></div>
 );
 const Modal=({title,onClose,children,wide})=>(
@@ -296,7 +296,7 @@ const ListPage=({title,icon,cols,rows,form,setForm,fields,onSave,onDelete,stats,
     <SH title={`${icon} ${title}`} sub={stats} action={<Btn onClick={()=>setShow(true)}>＋ 新規登録</Btn>}/>
     <div className="card"><Tbl cols={cols} rows={rows} onDelete={onDelete}/></div>
     {show&&<Modal title={`${title}登録`} onClose={()=>setShow(false)}>
-      {fields.map(f=><Fld key={f.k} l={f.l}>{f.type==="select"?<Sel v={form[f.k]||""} on={e=>setForm({...form,[f.k]:e.target.value})}>{f.opts.map(o=><option key={o} value={o}>{o}</option>)}</Sel>:f.type==="textarea"?<Txa v={form[f.k]||""} on={e=>setForm({...form,[f.k]:e.target.value})}/>:<Inp type={f.type||"text"} step={f.step} v={form[f.k]||""} on={e=>setForm({...form,[f.k]:e.target.value})} ph={f.ph}/>}</Fld>)}
+      {fields.map(f=>{const rf=resolveField(f);return <Fld key={rf.k} l={rf.l}>{rf.type==="select"?<Sel v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}>{(rf.opts||[]).map(o=><option key={o} value={o}>{o}</option>)}</Sel>:rf.type==="textarea"?<Txa v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}/>:<Inp type={rf.type||"text"} step={rf.step} v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})} ph={rf.ph}/>}</Fld>;})}
       <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:8}}>
         <Btn c="g" onClick={()=>setShow(false)}>キャンセル</Btn><Btn onClick={save}>保存</Btn>
       </div>
