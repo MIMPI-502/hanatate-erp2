@@ -171,7 +171,19 @@ setSaving(true);setDerr("");
 try{
 const row={date,pool_id:poolId,count:Number(count),cause,staff:"",memo:""};
 const res=await db.ins("erp_deaths",row);
-if(res.ok){setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);setCount("");setShow(false);setSaved(true);setTimeout(()=>setSaved(false),3000);}
+if(res.ok){
+setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);
+setCount("");setShow(false);setSaved(true);setTimeout(()=>setSaved(false),3000);
+const cnt=Number(count);
+if(cnt>0){
+setPools(prev=>prev.map(p=>{
+if(p.id!==poolId)return p;
+const nc=Math.max(0,(p.cur||p.current||0)-cnt);
+db.patch("erp_pools",p.id,{current:nc});
+return{...p,cur:nc,current:nc};
+}));
+}
+}
 else{
 let msg="保存失敗";
 try{const j=JSON.parse(res.err);msg=j.message||j.hint||res.err;}catch(e2){msg=res.err||"不明なエラー";}
