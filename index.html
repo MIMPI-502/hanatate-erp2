@@ -171,10 +171,7 @@ const DeathInput=({poolId,poolName,deaths,setDeaths})=>{
     try{
       const row={date,pool_id:poolId,count:Number(count),cause,staff:"",memo:""};
       const res=await db.ins("erp_deaths",row);
-      if(res.ok){
-        setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);
-        setCount("");setShow(false);setSaved(true);setTimeout(()=>setSaved(false),3000);
-      }
+      if(res.ok){setDeaths(p=>[{...row,id:"D"+Date.now()},...p]);setCount("");setShow(false);setSaved(true);setTimeout(()=>setSaved(false),3000);}
       else{
         let msg="保存失敗";
         try{const j=JSON.parse(res.err);msg=j.message||j.hint||res.err;}catch(e2){msg=res.err||"不明なエラー";}
@@ -227,9 +224,9 @@ const Sel=({v,on,children})=><select className="inp" value={v} onChange={on}>{ch
 const Txa=({v,on,rows=3})=><textarea className="inp" value={v} onChange={on} rows={rows} style={{resize:"vertical"}}/>;
 const Fld=({l,children})=><div className="fld"><label className="lbl">{l}</label>{children}</div>;
 const Bdg=({c,children})=><span className={`badge b${c}`}>{children}</span>;
-const Tbl=({cols,rows,empty="データなし",onDelete,onEdit})=>(
-  <div style={{overflowX:"auto"}}><table className="tbl"><thead><tr>{cols.map(c=><th key={c.k}>{c.l}</th>)}{(onDelete||onEdit)&&<th>操作</th>}</tr></thead>
-  <tbody>{rows.length===0?<tr><td colSpan={cols.length+((onDelete||onEdit)?1:0)} style={{padding:20,textAlign:"center",color:"#4a7055"}}>{empty}</td></tr>:rows.map((r,i)=><tr key={i} style={{color:"#e8f5ec"}}>{cols.map(c=><td key={c.k}>{c.r?c.r(r[c.k],r):r[c.k]??"—"}</td>)}{(onDelete||onEdit)&&<td style={{whiteSpace:"nowrap",display:"flex",gap:4,padding:"4px"}}>{onEdit&&<button onClick={()=>onEdit(r)} style={{padding:"4px 8px",background:"rgba(52,152,219,0.2)",border:"1px solid rgba(52,152,219,0.4)",borderRadius:4,color:"#3498db",fontSize:11,cursor:"pointer",touchAction:"manipulation"}}>✏️</button>}{onDelete&&r.id&&<button onClick={()=>{if(window.confirm("削除しますか？"))onDelete(r);}} style={{padding:"4px 8px",background:"rgba(231,76,60,0.2)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:4,color:"#e74c3c",fontSize:11,cursor:"pointer",touchAction:"manipulation"}}>🗑️</button>}</td>}</tr>)}</tbody>
+const Tbl=({cols,rows,empty="データなし",onDelete})=>(
+  <div style={{overflowX:"auto"}}><table className="tbl"><thead><tr>{cols.map(c=><th key={c.k}>{c.l}</th>)}{onDelete&&<th>削除</th>}</tr></thead>
+  <tbody>{rows.length===0?<tr><td colSpan={cols.length+(onDelete?1:0)} style={{padding:20,textAlign:"center",color:"#4a7055"}}>{empty}</td></tr>:rows.map((r,i)=><tr key={i} style={{color:"#e8f5ec"}}>{cols.map(c=><td key={c.k}>{c.r?c.r(r[c.k],r):r[c.k]??"—"}</td>)}{onDelete&&<td>{r.id&&<button onClick={()=>{if(window.confirm("この記録を削除しますか？"))onDelete(r);}} style={{padding:"4px 10px",background:"rgba(231,76,60,0.2)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:4,color:"#e74c3c",fontSize:12,cursor:"pointer",touchAction:"manipulation"}}>🗑️削除</button>}</td>}</tr>)}</tbody>
   </table></div>
 );
 const Modal=({title,onClose,children,wide})=>(
@@ -244,20 +241,64 @@ const SH=({title,sub,action})=>(
   <div className="sec-h"><div><div style={{fontSize:16,fontWeight:800}}>{title}</div>{sub&&<div style={{fontSize:11,color:"#7aa885",marginTop:2}}>{sub}</div>}</div>{action}</div>
 );
 
+// 許可枠管理
+const PermitPage=({permit,setPermit})=>{
+  const [show,setShow]=useState(false);
+  const [form,setForm]=useState({number:"",year:new Date().getFullYear(),annual:"",used:"",expiry:""});
+  const [toast,setToast]=useState("");
+  const t=(m)=>{setToast(m);setTimeout(()=>setToast(""),2500);};
+  const p=permit[0]||{};
+  const pct=p.annual?Math.round((p.used||0)/p.annual*100):0;
+  const save=async()=>{
+    const updated={...p,...form,annual:Number(form.annual||p.annual),used:Number(form.used||p.used),year:Number(form.year||p.year)};
+    await db.ups("erp_permit",updated);
+    setPermit([updated]);setShow(false);t("✅ 保存しました");
+  };
+  return <div>
+    <Toast m={toast}/>
+    <SH title="📋 許可枠管理" action={<Btn onClick={()=>{setForm({number:p.number||"",year:p.year||2026,annual:p.annual||"",used:p.used||"",expiry:p.expiry||""});setShow(true);}}>✏️ 編集</Btn>}/>
+    <div className="gridStat">
+      {[["許可番号",p.number||"—","#2ecc71"],["年度",(p.year||"—")+"年度","#2ecc71"],["年間許可",fmt(p.annual||0)+"尾","#2ecc71"],["使用済",fmt(p.used||0)+"尾","#f0a500"],["残枠",fmt((p.annual||0)-(p.used||0))+"尾","#2ecc71"],["期限",fd(p.expiry)||"—","#d4af37"]].map(function(item){const l=item[0],v=item[1],c=item[2];return(
+        <div className="stat" key={l}><div style={{fontSize:10,color:"#7aa885",marginBottom:4}}>{l}</div><div style={{fontSize:16,fontWeight:800,color:c}}>{v}</div></div>
+      );})}
+    </div>
+    <div className="card">
+      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+        <span style={{fontSize:12,color:"#7aa885"}}>許可枠使用率</span>
+        <span style={{fontWeight:700,color:pct>80?"#f0a500":"#2ecc71"}}>{pct}%</span>
+      </div>
+      <div className="prog" style={{height:10,borderRadius:5}}>
+        <div className="prog-bar" style={{height:10,borderRadius:5,width:Math.min(pct,100)+"%",background:pct>90?"#e74c3c":pct>70?"#f0a500":"#2ecc71"}}/>
+      </div>
+    </div>
+    {show&&<Modal title="許可枠編集" onClose={()=>setShow(false)}>
+      <Fld l="許可番号"><Inp v={form.number} on={e=>setForm({...form,number:e.target.value})} ph="FKO-2026-0042"/></Fld>
+      <Fld l="年度"><Inp type="number" v={String(form.year)} on={e=>setForm({...form,year:e.target.value})} ph="2026"/></Fld>
+      <Fld l="年間許可数（尾）"><Inp type="number" v={String(form.annual)} on={e=>setForm({...form,annual:e.target.value})} ph="50000"/></Fld>
+      <Fld l="使用済（尾）"><Inp type="number" v={String(form.used)} on={e=>setForm({...form,used:e.target.value})} ph="32000"/></Fld>
+      <Fld l="有効期限"><Inp type="date" v={form.expiry} on={e=>setForm({...form,expiry:e.target.value})}/></Fld>
+      <div style={{display:"flex",gap:8,marginTop:16}}>
+        <Btn onClick={save}>💾 保存</Btn>
+        <Btn c="g" onClick={()=>setShow(false)}>キャンセル</Btn>
+      </div>
+    </Modal>}
+  </div>;
+};
+
 // 水質アラート
 const WaterAlert=({water})=>{
   const today=water.filter(w=>w.date===td());
   const alerts=[];
   today.forEach(w=>{
-    if(w.temp&&(Number(w.temp)<20||Number(w.temp)>32))alerts.push(`⚠️ ${w.pool_id} 水温異常: ${w.temp}℃`);
-    if(w.ph&&(Number(w.ph)<6.5||Number(w.ph)>8.5))alerts.push(`⚠️ ${w.pool_id} pH異常: ${w.ph}`);
-    if(w.nh3&&Number(w.nh3)>0.5)alerts.push(`⚠️ ${w.pool_id} NH3高値: ${w.nh3}`);
-    if(w.do_level&&Number(w.do_level)<5)alerts.push(`⚠️ ${w.pool_id} DO低値: ${w.do_level}mg/L`);
+    if(w.temp&&(Number(w.temp)<20||Number(w.temp)>32))alerts.push(w.pool_id+" 水温異常: "+w.temp+"℃");
+    if(w.ph&&(Number(w.ph)<6.5||Number(w.ph)>8.5))alerts.push(w.pool_id+" pH異常: "+w.ph);
+    if(w.nh3&&Number(w.nh3)>0.5)alerts.push(w.pool_id+" NH3高値: "+w.nh3);
+    if(w.do_level&&Number(w.do_level)<5)alerts.push(w.pool_id+" DO低値: "+w.do_level+"mg/L");
   });
   if(alerts.length===0)return null;
   return <div style={{background:"rgba(231,76,60,0.1)",border:"1px solid rgba(231,76,60,0.4)",borderRadius:8,padding:12,marginBottom:12}}>
     <div style={{fontWeight:700,color:"#e74c3c",marginBottom:6,fontSize:13}}>🚨 水質アラート（本日）</div>
-    {alerts.map((a,i)=><div key={i} style={{fontSize:12,color:"#e74c3c",padding:"2px 0"}}>{a}</div>)}
+    {alerts.map(function(a,i){return <div key={i} style={{fontSize:12,color:"#e74c3c",padding:"2px 0"}}>⚠️ {a}</div>;})}
   </div>;
 };
 
@@ -265,7 +306,7 @@ const WaterAlert=({water})=>{
 const Dashboard=({pools,setPools,shipping,deaths,setDeaths,finance,setPage})=>{
   return <div>
     <SH title="ダッシュボード" sub={td()+" 現在"}/>
-    {WaterAlert({water})}
+    <WaterAlert water={water}/>
     <div className="gridStat">
       {[["","総在鰻",fmt(pools.reduce((s,p)=>s+(p.cur||p.current||0),0))+"尾","#2ecc71","stock"],
         ["🏊","管理池数",pools.length+"池","#2ecc71","stock"],
@@ -330,53 +371,7 @@ const ListPage=({title,icon,cols,rows,form,setForm,fields,onSave,onDelete,onUpda
     {show&&<Modal title={editRow?`${title}編集`:`${title}登録`} onClose={()=>{setShow(false);setEditRow(null);}}>
       {fields.map(f=>{const rf=resolveField(f);return <Fld key={rf.k} l={rf.l}>{rf.type==="select"?<Sel v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}>{(rf.opts||[]).map(o=><option key={o} value={o}>{o}</option>)}</Sel>:rf.type==="textarea"?<Txa v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})}/>:<Inp type={rf.type||"text"} step={rf.step} v={form[rf.k]||""} on={e=>setForm({...form,[rf.k]:e.target.value})} ph={rf.ph}/>}</Fld>;})}
       <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:8}}>
-        <Btn c="g" onClick={()=>{setShow(false);setEditRow(null);}}>キャンセル</Btn>
-        <Btn onClick={save}>{editRow?"✏️ 更新":"💾 保存"}</Btn>
-      </div>
-    </Modal>}
-  </div>;
-};
-
-// 許可枠管理
-const PermitPage=({permit,setPermit})=>{
-  const [show,setShow]=useState(false);
-  const [form,setForm]=useState({number:"",year:new Date().getFullYear(),annual:"",used:"",expiry:""});
-  const [toast,setToast]=useState("");
-  const t=(m)=>{setToast(m);setTimeout(()=>setToast(""),2500);};
-  const p=permit[0]||{};
-  const pct=p.annual?Math.round((p.used||0)/p.annual*100):0;
-  const save=async()=>{
-    const updated={...p,...form,annual:Number(form.annual||p.annual),used:Number(form.used||p.used),year:Number(form.year||p.year)};
-    await db.ups("erp_permit",updated);
-    setPermit([updated]);
-    setShow(false);t("✅ 保存しました");
-  };
-  return <div>
-    <Toast m={toast}/>
-    <SH title="📋 許可枠管理" action={<Btn onClick={()=>{setForm({number:p.number||"",year:p.year||2026,annual:p.annual||"",used:p.used||"",expiry:p.expiry||""});setShow(true);}}>✏️ 編集</Btn>}/>
-    <div className="gridStat">
-      {[["許可番号",p.number||"—","#2ecc71"],["年度",(p.year||"—")+"年度","#2ecc71"],["年間許可",fmt(p.annual||0)+"尾","#2ecc71"],["使用済",fmt(p.used||0)+"尾","#f0a500"],["残枠",fmt((p.annual||0)-(p.used||0))+"尾","#2ecc71"],["期限",fd(p.expiry)||"—","#d4af37"]].map(([l,v,c])=>(
-        <div className="stat" key={l}><div style={{fontSize:10,color:"#7aa885",marginBottom:4}}>{l}</div><div style={{fontSize:16,fontWeight:800,color:c}}>{v}</div></div>
-      ))}
-    </div>
-    <div className="card">
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-        <span style={{fontSize:12,color:"#7aa885"}}>許可枠使用率</span>
-        <span style={{fontWeight:700,color:pct>80?"#f0a500":"#2ecc71"}}>{pct}%</span>
-      </div>
-      <div className="prog" style={{height:10,borderRadius:5}}>
-        <div className="prog-bar" style={{height:10,borderRadius:5,width:`${Math.min(pct,100)}%`,background:pct>90?"#e74c3c":pct>70?"#f0a500":"#2ecc71"}}/>
-      </div>
-    </div>
-    {show&&<Modal title="許可枠編集" onClose={()=>setShow(false)}>
-      <Fld l="許可番号"><Inp v={form.number} on={e=>setForm({...form,number:e.target.value})} ph="FKO-2026-0042"/></Fld>
-      <Fld l="年度"><Inp type="number" v={form.year} on={e=>setForm({...form,year:e.target.value})} ph="2026"/></Fld>
-      <Fld l="年間許可数（尾）"><Inp type="number" inputMode="numeric" v={form.annual} on={e=>setForm({...form,annual:e.target.value})} ph="50000"/></Fld>
-      <Fld l="使用済（尾）"><Inp type="number" inputMode="numeric" v={form.used} on={e=>setForm({...form,used:e.target.value})} ph="32000"/></Fld>
-      <Fld l="有効期限"><Inp type="date" v={form.expiry} on={e=>setForm({...form,expiry:e.target.value})}/></Fld>
-      <div style={{display:"flex",gap:8,marginTop:16}}>
-        <Btn onClick={save}>💾 保存</Btn>
-        <Btn c="g" onClick={()=>setShow(false)}>キャンセル</Btn>
+        <Btn c="g" onClick={()=>{setShow(false);setEditRow(null);}}>キャンセル</Btn><Btn onClick={save}>{editRow?"✏️ 更新":"💾 保存"}</Btn>
       </div>
     </Modal>}
   </div>;
@@ -489,7 +484,12 @@ const App=()=>{
   const [fHaccp,setFHaccp]=useState({date:td(),check_type:"入荷検品",result:"合格",staff:"",memo:""});
 
   const saveStock=async()=>{const res=await db.ins("erp_stock_in",fStock);if(res.ok){setSI(p=>[{...fStock,id:"S"+Date.now()},...p]);setFStock({date:td(),supplier:"",pool_id:"P01",lot:"",qty:"",kg:"",avg_size:"",staff:""});}};
-  const saveShip=async()=>{const res=await db.ins("erp_shipping",fShip);if(res.ok){setShipping(p=>[{...fShip,id:"SH"+Date.now()},...p]);setFShip({date:td(),destination:"",pool_id:"P01",qty:"",kg:"",price:""});const qty=Number(fShip.qty||0);if(qty>0){setPermit(prev=>prev.map(p=>{const nu=(p.used||0)+qty;db.patch("erp_permit",p.id,{used:nu});return {...p,used:nu};}));}}};
+  const saveShip=async()=>{const res=await db.ins("erp_shipping",fShip);if(res.ok){
+    setShipping(p=>[{...fShip,id:"SH"+Date.now()},...p]);
+    setFShip({date:td(),destination:"",pool_id:"P01",qty:"",kg:"",price:""});
+    const qty=Number(fShip.qty||0);
+    if(qty>0){setPermit(prev=>prev.map(p=>{const nu=(p.used||0)+qty;db.patch("erp_permit",p.id,{used:nu});return {...p,used:nu};}));}
+  }};
   const saveFeed=async()=>{const res=await db.ins("erp_feeding",fFeed);if(res.ok){setFeeding(p=>[{...fFeed,id:"F"+Date.now()},...p]);setFFeed({date:td(),pool_id:"P01",feed_type:"配合飼料A",amount_kg:"",staff:""});}};
   const saveWater=async()=>{const res=await db.ins("erp_water_quality",fWater);if(res.ok){setWater(p=>[{...fWater,id:"W"+Date.now()},...p]);setFWater({date:td(),pool_id:"P01",temp:"",ph:"",do_level:"",nh3:"",no2:"",salt:"",exchange:"",staff:""});}};
   const saveDeath=async()=>{const res=await db.ins("erp_deaths",fDeath);if(res.ok){
@@ -498,9 +498,9 @@ const App=()=>{
     const cnt=Number(fDeath.count||0);
     if(cnt>0){setPools(prev=>prev.map(p=>{
       if(p.id!==fDeath.pool_id)return p;
-      const newCur=Math.max(0,(p.cur||p.current||0)-cnt);
-      db.ups("erp_pools",{id:p.id,name:p.name,current:newCur,weight:p.kg||p.weight||0,capacity:p.cap||p.capacity||0,status:p.st||p.status||"normal"});
-      return {...p,cur:newCur,current:newCur};
+      const nc=Math.max(0,(p.cur||p.current||0)-cnt);
+      db.ups("erp_pools",{id:p.id,name:p.name,current:nc,weight:p.kg||p.weight||0,capacity:p.cap||p.capacity||0,status:p.st||p.status||"normal"});
+      return {...p,cur:nc,current:nc};
     }));}
   }};
   const saveMed=async()=>{const d={...fMed,status:"active"};const res=await db.ins("erp_medicines",d);if(res.ok){setMed(p=>[{...d,id:"M"+Date.now()},...p]);setFMed({name:"",pool_id:"P01",use_date:td(),amount:"",purpose:"",withdraw_days:"",clear_date:"",staff:""});}};
@@ -550,8 +550,7 @@ const App=()=>{
       setForm={setFHaccp} fields={[{k:"date",l:"日付",type:"date"},{k:"check_type",l:"点検種別",type:"select",opts:["入荷検品","温度管理","衛生点検","設備点検","加工工程","出荷検品","その他"]},{k:"result",l:"結果",type:"select",opts:["合格","要改善","不合格"]},{k:"staff",l:"担当者"},{k:"memo",l:"メモ",type:"textarea"}]}
       onSave={saveHaccp} onUpdate={async(id,d)=>{await db.patch("erp_haccp",id,d);setHaccp(p=>p.map(x=>x.id===id?{...x,...d}:x));}} onDelete={async(r)=>{const ok=await db.del("erp_haccp",r.id);if(ok)setHaccp(p=>p.filter(x=>x.id!==r.id));return ok;}} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{haccp.length}件</span><CSVBtn filename={`HACCP記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'check_type',l:'点検種別'},{k:'result',l:'結果'},{k:'staff',l:'担当'},{k:'memo',l:'メモ'}]} rows={haccp}/></span>}/>,
     permit:<PermitPage permit={permit} setPermit={setPermit}/>,
-
-    audit:<AuditPage pools={pools} deaths={deaths} medicines={medicines} shipping={shipping} water={water} haccp={haccp}/>,
+        audit:<AuditPage pools={pools} deaths={deaths} medicines={medicines} shipping={shipping} water={water} haccp={haccp}/>,
   };
 
   if(loading)return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",flexDirection:"column",gap:16}}>
