@@ -388,7 +388,18 @@ const App=()=>{
       db.get("erp_haccp"),Promise.resolve([]),Promise.resolve([])
     ]).then(([p,si,sh,fe,wa,de,me,pr,ha,fi,sb])=>{
       if(p&&p.length){
-        setPools(p.map(x=>({...x,cur:x.cur||x.current||0,kg:x.kg||x.weight||0,cap:x.cap||x.capacity||0,st:x.st||x.status||"normal"})));
+        const fixed=p.map(x=>{
+          const cur=Number(x.cur||x.current||0);
+          const kg=Number(x.kg||x.weight||0);
+          const cap=Number(x.cap||x.capacity||0);
+          const init=POOLS.find(q=>q.id===x.id);
+          if(init&&cur<init.cur*0.1){
+            db.patch("erp_pools",x.id,{current:init.cur,weight:init.kg,capacity:init.cap});
+            return{...x,cur:init.cur,kg:init.kg,cap:init.cap,st:x.st||x.status||"normal"};
+          }
+          return{...x,cur,kg,cap,st:x.st||x.status||"normal"};
+        });
+        setPools(fixed);
       } else {
         Promise.all(POOLS.map(pool=>db.ups("erp_pools",{id:pool.id,name:pool.name,current:pool.cur,weight:pool.kg,capacity:pool.cap,status:pool.st})));
       }
