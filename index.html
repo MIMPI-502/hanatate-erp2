@@ -57,7 +57,7 @@ const SB_URL="https://xmzsszuteyuumspyzsaq.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhtenNzenV0ZXl1dW1zcHl6c2FxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NDY0NjEsImV4cCI6MjA5NzMyMjQ2MX0.48SaeSrIiVElH-RUTXEgjBga07WACtazXqT8_qvdztA";
 const H={"Content-Type":"application/json",apikey:SB_KEY,Authorization:"Bearer "+SB_KEY};window.__SB=SB_URL;window.__H=H;
 const db={
-get:async(t)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}?select=*&order=created_at.desc`,{headers:H});return r.ok?await r.json():[];},
+get:async(t)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}?select=*`,{headers:H});return r.ok?await r.json():[];},
 ins:async(t,d)=>{const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:"POST",headers:{...H,Prefer:"return=minimal"},body:JSON.stringify(d)});if(!r.ok){const e=await r.text();console.error("ins error",t,r.status,e);return {ok:false,err:e};}return {ok:true};},
 ups:async(t,d,col="id")=>{
 await fetch(`${SB_URL}/rest/v1/${t}?${col}=eq.${d[col]}`,{method:"DELETE",headers:H});
