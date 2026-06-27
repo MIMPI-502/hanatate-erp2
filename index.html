@@ -325,7 +325,7 @@ const [mon,setMon]=useState(td().slice(0,7));
 const [tab,setTab]=useState("shipping");
 const f=arr=>arr.filter(r=>(r.date||r.use_date||"").slice(0,7)===mon);
 const actMeds=medicines.filter(m=>m.status==="active");
-const pName=id=>(pools.find(p=>p.id===id)||{}).name||id;
+const pN=id=>(pools.find(p=>p.id===id)||{}).name||id;
 const tabStyle=(t)=>({padding:"7px 14px",borderRadius:6,border:"none",cursor:"pointer",fontWeight:700,fontSize:12,
 background:tab===t?"#2ecc71":"rgba(46,204,113,0.08)",color:tab===t?"#0a0f0d":"#7aa885"});
 const sections={
@@ -429,7 +429,7 @@ if(pr&&pr.length)setProc(pr);if(ha&&ha.length)setHaccp(ha);
 },[]);
 const pOpts=pools.map(p=>p.id);
 const pId=n=>(pools.find(p=>p.name===n||p.id===n)||pools[0]||{}).id||"P01";
-const pName=id=>(pools.find(p=>p.id===id)||{}).name||id;
+const pN=id=>(pools.find(p=>p.id===id)||{}).name||id;
 const [fStock,setFStock]=useState({date:td(),supplier:"",pool_id:"P01",lot:"",qty:"",kg:"",avg_size:"",staff:""});
 const [fShip,setFShip]=useState({date:td(),destination:"",pool_id:"P01",qty:"",kg:"",price:""});
 const [fFeed,setFFeed]=useState({date:td(),pool_id:"P01",feed_type:"配合飼料A",amount_kg:"",staff:""});
@@ -449,32 +449,32 @@ const saveHaccp=async()=>{const res=await db.ins("erp_haccp",fHaccp);if(res.ok){
 const pages={
 dashboard:<Dashboard pools={window.__sortPools?window.__sortPools(pools,POOLS.map(p=>p.id)):pools} setPools={setPools} shipping={shipping} deaths={deaths} setDeaths={setDeaths} finance={[]} setPage={setPg}/>,
 stock:<ListPage title="池入れ・在鰻管理" icon=""
-cols={[{k:"date",l:"日付"},{k:"supplier",l:"仕入先"},{k:"pool_id",l:"池",r:pName},{k:"lot",l:"ロット"},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"staff",l:"担当"}]}
+cols={[{k:"date",l:"日付"},{k:"supplier",l:"仕入先"},{k:"pool_id",l:"池",r:pN},{k:"lot",l:"ロット"},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"staff",l:"担当"}]}
 rows={stockIn} form={fStock}
 setForm={setFStock} fields={[{k:"date",l:"入荷日",type:"date"},{k:"supplier",l:"仕入先",ph:"福岡淡水株式会社"},{k:"pool_id",l:"池",isPool:true},{k:"lot",l:"ロット",ph:"L2026-001"},{k:"qty",l:"尾数",type:"number"},{k:"kg",l:"重量(kg)",type:"number"},{k:"staff",l:"担当者",ph:"昭次郎"}]}
 onSave={saveStock} onDelete={(r)=>WD("erp_stock_in",r.id,setSI)} onUpdate={(id,d)=>WU("erp_stock_in",id,d,setSI)} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{stockIn.length}件</span><CSVBtn filename={`池入れ記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'supplier',l:'仕入先'},{k:'pool_id',l:'池ID'},{k:'lot',l:'ロット'},{k:'qty',l:'尾数'},{k:'kg',l:'重量kg'},{k:'avg_size',l:'平均サイズ'},{k:'staff',l:'担当'}]} rows={stockIn}/></span>}/>,
 shipping:<ListPage title="出荷管理" icon="📦"
-cols={[{k:"date",l:"日付"},{k:"destination",l:"出荷先"},{k:"pool_id",l:"池",r:pName},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"price",l:"金額",r:v=>"¥"+fmt(v)}]}
+cols={[{k:"date",l:"日付"},{k:"destination",l:"出荷先"},{k:"pool_id",l:"池",r:pN},{k:"qty",l:"尾数",r:v=>fmt(v)+"尾"},{k:"kg",l:"kg",r:v=>fmt(v)+"kg"},{k:"price",l:"金額",r:v=>"¥"+fmt(v)}]}
 rows={shipping} form={fShip}
 setForm={setFShip} fields={[{k:"date",l:"出荷日",type:"date"},{k:"destination",l:"出荷先",ph:"タイセイ株式会社"},{k:"pool_id",l:"池",isPool:true},{k:"qty",l:"尾数",type:"number"},{k:"kg",l:"重量(kg)",type:"number"},{k:"price",l:"金額",type:"number"}]}
 onSave={saveShip} onDelete={(r)=>WD("erp_shipping",r.id,setShipping)} onUpdate={(id,d)=>WU("erp_shipping",id,d,setShipping)} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>計{fmt(shipping.reduce((s,r)=>s+(r.kg||0),0))}kg</span><CSVBtn filename={`出荷記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'destination',l:'出荷先'},{k:'pool_id',l:'池ID'},{k:'qty',l:'尾数'},{k:'kg',l:'重量kg'},{k:'price',l:'金額'}]} rows={shipping}/></span>}/>,
 feeding:<ListPage title="給餌管理" icon="🌾"
-cols={[{k:"date",l:"日付"},{k:"pool_id",l:"池",r:pName},{k:"feed_type",l:"飼料"},{k:"amount_kg",l:"給餌量",r:v=>fmt(v)+"kg"},{k:"staff",l:"担当"}]}
+cols={[{k:"date",l:"日付"},{k:"pool_id",l:"池",r:pN},{k:"feed_type",l:"飼料"},{k:"amount_kg",l:"給餌量",r:v=>fmt(v)+"kg"},{k:"staff",l:"担当"}]}
 rows={feeding} form={fFeed}
 setForm={setFFeed} fields={[{k:"date",l:"日付",type:"date"},{k:"pool_id",l:"池",isPool:true},{k:"feed_type",l:"飼料",type:"select",opts:["配合飼料A","配合飼料B","生餌","その他"]},{k:"amount_kg",l:"給餌量(kg)",type:"number",step:"0.1"},{k:"staff",l:"担当者"}]}
 onSave={saveFeed} onDelete={(r)=>WD("erp_feeding",r.id,setFeeding)} onUpdate={(id,d)=>WU("erp_feeding",id,d,setFeeding)} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>本日{fmt(feeding.filter(f=>f.date===td()).reduce((s,f)=>s+(f.amount_kg||0),0))}kg</span><CSVBtn filename={`給餌記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'feed_type',l:'飼料種別'},{k:'amount_kg',l:'給餌量kg'},{k:'staff',l:'担当'}]} rows={feeding}/></span>}/>,
 water:<ListPage title="水質管理" icon="💧"
-cols={[{k:"date",l:"日付"},{k:"pool_id",l:"池",r:pName},{k:"temp",l:"水温",r:v=>v+"℃"},{k:"ph",l:"pH"},{k:"do_level",l:"DO"},{k:"nh3",l:"NH3"},{k:"staff",l:"担当"}]}
+cols={[{k:"date",l:"日付"},{k:"pool_id",l:"池",r:pN},{k:"temp",l:"水温",r:v=>v+"℃"},{k:"ph",l:"pH"},{k:"do_level",l:"DO"},{k:"nh3",l:"NH3"},{k:"staff",l:"担当"}]}
 rows={water} form={fWater}
 setForm={setFWater} fields={[{k:"date",l:"日付",type:"date"},{k:"pool_id",l:"池",isPool:true},{k:"temp",l:"水温(℃)",type:"number",step:"0.1"},{k:"do_level",l:"DO(mg/L)",type:"number",step:"0.1"},{k:"o2sat",l:"酸素飽和度(%)",type:"number",step:"0.1"},{k:"ph",l:"pH",type:"number",step:"0.1"},{k:"no2",l:"HNO2",type:"number",step:"0.01"},{k:"nh3",l:"NH3",type:"number",step:"0.01"},{k:"exchange",l:"換水率(%)",type:"number"},{k:"staff",l:"担当者"}]}
-onSave={saveWater} onDelete={(r)=>WD("erp_water_quality",r.id,setWater)} onUpdate={(id,d)=>WU("erp_water_quality",id,d,setWater)} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><CSVBtn filename={`水質記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'temp',l:'水温'},{k:'ph',l:'pH'},{k:'do_level',l:'DO'},{k:'nh3',l:'NH3'},{k:'no2',l:'NO2'},{k:'salt',l:'塩分'},{k:'exchange',l:'換水率'},{k:'staff',l:'担当'}]} rows={water}/><ExcelBtn filename={`鹿児島委託_水質記録_${td()}.xlsx`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'temp',l:'水温'},{k:'ph',l:'pH'},{k:'do_level',l:'DO'},{k:'nh3',l:'NH3'},{k:'no2',l:'NO2'},{k:'salt',l:'塩分'},{k:'exchange',l:'換水率'},{k:'staff',l:'担当'}]} rows={water.filter(r=>r.pool_id&&r.pool_id.startsWith('K'))} sheet="鹿児島委託_水質記録"/></span>}/>,
+onSave={saveWater} onDelete={(r)=>WD("erp_water_quality",r.id,setWater)} onUpdate={(id,d)=>WU("erp_water_quality",id,d,setWater)} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><CSVBtn filename={`水質記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'temp',l:'水温'},{k:'do_level',l:'DO'},{k:'o2sat',l:'酸素飽和度'},{k:'ph',l:'pH'},{k:'no2',l:'HNO2'},{k:'nh3',l:'NH3'},{k:'exchange',l:'換水率'},{k:'staff',l:'担当'}]} rows={water}/><ExcelBtn filename={`鹿児島委託_水質記録_${td()}.xlsx`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'temp',l:'水温'},{k:'do_level',l:'DO'},{k:'o2sat',l:'酸素飽和度'},{k:'ph',l:'pH'},{k:'no2',l:'HNO2'},{k:'nh3',l:'NH3'},{k:'exchange',l:'換水率'},{k:'staff',l:'担当'}]} rows={water.filter(r=>r.pool_id&&r.pool_id.startsWith('K'))} sheet="鹿児島委託_水質記録"/></span>}/>,
 deaths:<ListPage title="死鰻管理" icon="📉"
-cols={[{k:"date",l:"日付"},{k:"pool_id",l:"池",r:pName},{k:"count",l:"死鰻数",r:v=><span style={{color:"#e74c3c",fontWeight:700}}>{fmt(v)}尾</span>},{k:"cause",l:"原因"},{k:"staff",l:"担当"}]}
+cols={[{k:"date",l:"日付"},{k:"pool_id",l:"池",r:pN},{k:"count",l:"死鰻数",r:v=><span style={{color:"#e74c3c",fontWeight:700}}>{fmt(v)}尾</span>},{k:"cause",l:"原因"},{k:"staff",l:"担当"}]}
 rows={deaths} form={fDeath}
 setForm={setFDeath} fields={[{k:"date",l:"日付",type:"date"},{k:"pool_id",l:"池",isPool:true},{k:"count",l:"死鰻数",type:"number"},{k:"cause",l:"原因",ph:"水質悪化・疾病 等"},{k:"staff",l:"担当者"}]}
 onSave={saveDeath} onDelete={(r)=>WD("erp_deaths",r.id,setDeaths)} onUpdate={(id,d)=>WU("erp_deaths",id,d,setDeaths)} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>累計{fmt(deaths.reduce((s,d)=>s+(d.count||0),0))}尾</span><CSVBtn filename={`死鰻記録_${td()}.csv`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'count',l:'死鰻数'},{k:'cause',l:'原因'},{k:'staff',l:'担当'}]} rows={deaths}/><ExcelBtn filename={`鹿児島委託_死鰻記録_${td()}.xlsx`} cols={[{k:'date',l:'日付'},{k:'pool_id',l:'池ID'},{k:'count',l:'死鰻数'},{k:'cause',l:'原因'},{k:'staff',l:'担当'}]} rows={deaths.filter(r=>r.pool_id&&r.pool_id.startsWith('K'))} sheet="鹿児島委託_死鰻記録"/></span>}/>,
 medicine:<ListPage title="薬品管理" icon="💊"
-cols={[{k:"use_date",l:"投薬日"},{k:"name",l:"薬品名"},{k:"pool_id",l:"池",r:pName},{k:"amount",l:"使用量"},{k:"purpose",l:"目的"},{k:"withdraw_days",l:"休薬日数",r:v=>v+"日"},{k:"clear_date",l:"休薬満了"},{k:"status",l:"状態",r:v=><Bdg c={v==="active"?"y":"g"}>{v==="active"?"投薬中":"完了"}</Bdg>}]}
+cols={[{k:"use_date",l:"投薬日"},{k:"name",l:"薬品名"},{k:"pool_id",l:"池",r:pN},{k:"amount",l:"使用量"},{k:"purpose",l:"目的"},{k:"withdraw_days",l:"休薬日数",r:v=>v+"日"},{k:"clear_date",l:"休薬満了"},{k:"status",l:"状態",r:v=><Bdg c={v==="active"?"y":"g"}>{v==="active"?"投薬中":"完了"}</Bdg>}]}
 rows={medicines} form={fMed}
 setForm={setFMed} fields={[{k:"name",l:"薬品名",ph:"フラボマイシン"},{k:"pool_id",l:"池",isPool:true},{k:"use_date",l:"投薬日",type:"date"},{k:"amount",l:"使用量",ph:"50g"},{k:"purpose",l:"目的",ph:"腸炎治療"},{k:"withdraw_days",l:"休薬日数",type:"number"},{k:"staff",l:"担当者"}]}
 onSave={saveMed} onDelete={(r)=>WD("erp_medicines",r.id,setMed)} onUpdate={(id,d)=>WU("erp_medicines",id,d,setMed)} poolOpts={pOpts} stats={<span style={{display:'flex',gap:8,alignItems:'center'}}><span>投薬中{medicines.filter(m=>m.status==="active").length}件</span><CSVBtn filename={`薬品記録_${td()}.csv`} cols={[{k:'use_date',l:'投薬日'},{k:'name',l:'薬品名'},{k:'pool_id',l:'池ID'},{k:'amount',l:'使用量'},{k:'purpose',l:'目的'},{k:'withdraw_days',l:'休薬日数'},{k:'clear_date',l:'休薬満了'},{k:'status',l:'状態'}]} rows={medicines}/></span>}/>,
