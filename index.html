@@ -147,7 +147,7 @@ return <div style={{marginBottom:8}}>
 <div><div style={{fontSize:10,color:"#7aa885",marginBottom:3}}>稼働率</div>
 <div style={{padding:"8px",fontSize:14,textAlign:"center",background:"rgba(46,204,113,0.1)",borderRadius:6,color:pct>90?"#e74c3c":pct>70?"#f0a500":"#2ecc71",fontWeight:700}}>{pct}%</div></div>
 <div><div style={{fontSize:10,color:"#7aa885",marginBottom:3}}>容量(尾)</div>
-<input className="inp" type="number" inputMode="numeric" pattern="[0-9]*" value={cap} onChange={e=>setCap(e.target.value)} style={{padding:"10px 8px",fontSize:16,textAlign:"center",width:"100%",boxSizing:"border-box"}}/></div>
+<input className="inp" type="text" inputMode="numeric" value={cap} onChange={e=>setCap(e.target.value.replace(/[^0-9]/g,""))} style={{padding:"10px 8px",fontSize:16,textAlign:"center",width:"100%",boxSizing:"border-box"}}/></div>
 </div>
 <div style={{display:"flex",gap:6}}>
 <button onClick={save} disabled={saving} style={{flex:1,padding:"12px",background:saving?"#666":"#2ecc71",border:"none",borderRadius:8,color:"#0a0f0d",fontSize:15,cursor:"pointer",fontWeight:700,touchAction:"manipulation"}}>{saving?"保存中...":"💾 保存する"}</button>
@@ -405,7 +405,7 @@ const cap=Number(x.cap||x.capacity||0);
 const init=POOLS.find(q=>q.id===x.id);
 if(init){
 const fixCur=cur<100&&init.cur>=100;
-const fixCap=cap<1000&&init.cap>=1000;
+const fixCap=cap<5000&&init.cap>=5000;
 if(fixCur||fixCap){
 const nc=fixCur?init.cur:cur;
 const nk=fixCur?init.kg:kg;
