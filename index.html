@@ -414,7 +414,7 @@ db.patch("erp_pools",x.id,{capacity:init.cap});
 return{...x,cur,kg,cap:init.cap,st:x.st||x.status||"normal"};
 }
 }
-const z=["P05","P09","P10"].includes(x.id);if(z&&cur>0)db.patch("erp_pools",x.id,{current:0,weight:0,cur:0,kg:0});return{...x,cur:z?0:cur,kg:z?0:kg,cap,st:x.st||x.status||"normal"};
+const z=["P05","P09","P10"].includes(x.id);if(z&&cur>0)db.patch("erp_pools",x.id,{current:0,weight:0});return{...x,cur:z?0:cur,current:z?0:cur,kg:z?0:kg,weight:z?0:kg,cap,st:x.st||x.status||"normal"};
 });
 setPools(window.__sortPools(fixed,POOLS.map(function(p){return p.id;})));
 } else {
