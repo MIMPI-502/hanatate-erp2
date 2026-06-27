@@ -373,7 +373,7 @@ action={<input type="month" value={mon} onChange={e=>setMon(e.target.value)} cla
 </div>
 <div className="card">
 <div style={{fontWeight:700,marginBottom:10,fontSize:13}}>🏊 池別在鰻</div>
-<Tbl cols={[{k:"name",l:"池名"},{k:"cur",l:"在鰻",r:v=>fmt(v)+"尾"},{k:"kg",l:"重量",r:v=>fmt(v)+"kg"},{k:"st",l:"状態",r:v=><Bdg c={(v==="warning"&&r&&r.id!=="P03")?"y":"g"}>{(v==="warning"&&r&&r.id!=="P03")?"要注意":"正常"}</Bdg>}]} rows={pools}/>
+<Tbl cols={[{k:"name",l:"池名"},{k:"cur",l:"在鰻",r:v=>fmt(v)+"尾"},{k:"kg",l:"重量",r:v=>fmt(v)+"kg"},{k:"st",l:"状態",r:v=><Bdg c={v==="warning"?"y":"g"}>{v==="warning"?"要注意":"正常"}</Bdg>}]} rows={pools}/>
 </div>
 </div>;
 };
