@@ -390,7 +390,7 @@ const [deaths,setDeaths]=useState([]);
 const [medicines,setMed]=useState([]);
 const [processing,setProc]=useState([]);
 const [haccp,setHaccp]=useState([]);
-const [permit]=useState([{id:"PM1",number:"FKO-2026-0042",year:2026,annual:50000,used:32000,expiry:"2027-03-31"}]);
+const [permit,setPermit]=useState([{id:"PM1",number:"FKO-2026-0042",year:2026,annual:50000,used:32000,expiry:"2027-03-31"}]);
 useEffect(()=>{
 Promise.all([
 db.get("erp_pools"),db.get("erp_stock_in"),db.get("erp_shipping"),db.get("erp_feeding"),
@@ -438,7 +438,7 @@ const [fMed,setFMed]=useState({name:"",pool_id:"P01",use_date:td(),amount:"",pur
 const [fProc,setFProc]=useState({date:td(),product:"蒲焼き（1尾）",raw_kg:"",yield_kg:"",qty:"",staff:""});
 const [fHaccp,setFHaccp]=useState({date:td(),check_type:"入荷検品",result:"合格",staff:"",memo:""});
 const saveStock=async()=>{const res=await db.ins("erp_stock_in",fStock);if(res.ok){setSI(p=>[{...fStock,id:"S"+Date.now()},...p]);setFStock({date:td(),supplier:"",pool_id:"P01",lot:"",qty:"",kg:"",avg_size:"",staff:""});}};
-const saveShip=async()=>{const res=await db.ins("erp_shipping",fShip);if(res.ok){setShipping(p=>[{...fShip,id:"SH"+Date.now()},...p]);setFShip({date:td(),destination:"",pool_id:"P01",qty:"",kg:"",price:""});}};
+const saveShip=async()=>{const res=await db.ins("erp_shipping",fShip);if(res.ok){setShipping(p=>[{...fShip,id:"SH"+Date.now()},...p]);setFShip({date:td(),destination:"",pool_id:"P01",qty:"",kg:"",price:""});const qty=Number(fShip.qty||0);if(qty>0&&permit.length>0){const p0=permit[0];window.__upd("erp_permit",p0.id,{used:(p0.used||0)+qty},setPermit);}}};
 const saveFeed=async()=>{const res=await db.ins("erp_feeding",fFeed);if(res.ok){setFeeding(p=>[{...fFeed,id:"F"+Date.now()},...p]);setFFeed({date:td(),pool_id:"P01",feed_type:"配合飼料A",amount_kg:"",staff:""});}};
 const saveWater=async()=>{const res=await db.ins("erp_water_quality",fWater);if(res.ok){setWater(p=>[{...fWater,id:"W"+Date.now()},...p]);setFWater({date:td(),pool_id:"P01",temp:"",ph:"",do_level:"",nh3:"",no2:"",salt:"",exchange:"",staff:""});}};
 const saveDeath=async()=>{const res=await db.ins("erp_deaths",fDeath);if(res.ok){setDeaths(p=>[{...fDeath,id:"D"+Date.now()},...p]);setFDeath({date:td(),pool_id:"P01",count:"",cause:"",staff:""});}};
