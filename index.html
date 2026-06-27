@@ -405,17 +405,13 @@ const cap=Number(x.cap||x.capacity||0);
 const init=POOLS.find(q=>q.id===x.id);
 const st=init?init.st:(x.st||x.status||"normal");
 if(init){
-const fixCur=cur<100&&init.cur>=100;
 const fixCap=cap<5000&&init.cap>=5000;
-if(fixCur||fixCap){
-const nc=fixCur?init.cur:cur;
-const nk=fixCur?init.kg:kg;
-const ncap=fixCap?init.cap:cap;
-db.patch("erp_pools",x.id,{current:nc,weight:nk,capacity:ncap});
-return{...x,cur:nc,kg:nk,cap:ncap,st:x.st||x.status||"normal"};
+if(fixCap){
+db.patch("erp_pools",x.id,{capacity:init.cap});
+return{...x,cur,kg,cap:init.cap,st:x.st||x.status||"normal"};
 }
 }
-return{...x,cur,kg,cap,st:x.st||x.status||"normal"};
+const z=["P05","P09","P10"].includes(x.id);if(z&&cur>0)db.patch("erp_pools",x.id,{current:0,weight:0});return{...x,cur:z?0:cur,kg:z?0:kg,cap,st:x.st||x.status||"normal"};
 });
 setPools(window.__sortPools(fixed,POOLS.map(function(p){return p.id;})));
 } else {
@@ -536,6 +532,7 @@ return <div>
 };
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
+<script>WD=window.__del=function(t,id,fn){var S=window.__SB,H=window.__H;if(!S)return;if(!window.confirm("削除しますか？"))return;fetch(S+"/rest/v1/"+t</script>
 <script>WD=window.__del=function(t,id,fn){var S=window.__SB,H=window.__H;if(!S)return;if(!window.confirm("削除しますか？"))return;fetch(S+"/rest/v1/"+t+"?id=eq."+encodeURIComponent(id),{method:"DELETE",headers:H}).then(function(r){if(r.ok&&fn)fn(function(p){return p.filter(function(x){return x.id!==id;});});});};</script>
 <div id="pe-m" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999;overflow-y:auto;"><div style="background:#1a2e1a;border-radius:12px;padding:20px;max-width:380px;margin:60px auto;"><div style="color:#2ecc71;font-weight:700;font-size:16px;margin-bottom:16px;">📋 許可枠編集</div><div style="margin-bottom:10px;"><div style="color:#7aa885;font-size:11px;">許可番号</div><input id="pe-n" style="width:100%;padding:10px;background:#0d1f0d;border:1px solid #2d4a2d;border-radius:6px;color:#e8f5ec;font-size:14px;box-sizing:border-box;"></div><div style="margin-bottom:10px;"><div style="color:#7aa885;font-size:11px;">年度</div><input id="pe-y" type="number" style="width:100%;padding:10px;background:#0d1f0d;border:1px solid #2d4a2d;border-radius:6px;color:#e8f5ec;font-size:14px;box-sizing:border-box;"></div><div style="margin-bottom:10px;"><div style="color:#7aa885;font-size:11px;">年間許可数（尾）</div><input id="pe-a" inputmode="numeric" style="width:100%;padding:10px;background:#0d1f0d;border:1px solid #2d4a2d;border-radius:6px;color:#e8f5ec;font-size:14px;box-sizing:border-box;"></div><div style="margin-bottom:10px;"><div style="color:#7aa885;font-size:11px;">使用済（尾）</div><input id="pe-u" inputmode="numeric" style="width:100%;padding:10px;background:#0d1f0d;border:1px solid #2d4a2d;border-radius:6px;color:#e8f5ec;font-size:14px;box-sizing:border-box;"></div><div style="margin-bottom:16px;"><div style="color:#7aa885;font-size:11px;">有効期限</div><input id="pe-e" type="date" style="width:100%;padding:10px;background:#0d1f0d;border:1px solid #2d4a2d;border-radius:6px;color:#e8f5ec;font-size:14px;box-sizing:border-box;"></div><div style="display:flex;gap:8px;"><button onclick="window.__svPE()" style="flex:1;padding:12px;background:#2ecc71;border:none;border-radius:8px;color:#0d1f0d;font-weight:700;cursor:pointer;">💾 保存</button><button onclick="document.getElementById('pe-m').style.display='none'" style="flex:1;padding:12px;background:rgba(46,204,113,0.1);border:1px solid #2d4a2d;border-radius:8px;color:#7aa885;cursor:pointer;">閉じる</button></div></div></div><script>window.__openPE=function(p){window.__peId=p.id;document.getElementById('pe-n').value=p.number||'';document.getElementById('pe-y').value=p.year||2026;document.getElementById('pe-a').value=p.annual||0;document.getElementById('pe-u').value=p.used||0;document.getElementById('pe-e').value=p.expiry||'';document.getElementById('pe-m').style.display='block';};window.__svPE=function(){var d={number:document.getElementById('pe-n').value,year:+document.getElementById('pe-y').value,annual:+document.getElementById('pe-a').value,used:+document.getElementById('pe-u').value,expiry:document.getElementById('pe-e').value};fetch(window.__SB+'/rest/v1/erp_permit?id=eq.'+encodeURIComponent(window.__peId),{method:'PATCH',headers:Object.assign({},window.__H,{'Prefer':'return=minimal'}),body:JSON.stringify(d)}).then(function(r){if(r.ok){document.getElementById('pe-m').style.display='none';alert('✅ 保存しました');location.reload();}});};</script>
 <script>window.__cleanWater=function(f){var r=Object.assign({},f);["temp","ph","do_level","nh3","no2","salt","exchange"].forEach(function(k){if(r[k]==="")r[k]=null;});return r;};</script>
