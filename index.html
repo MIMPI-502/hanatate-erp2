@@ -402,8 +402,8 @@ db.get("erp_haccp"),Promise.resolve([]),Promise.resolve([])
 ]).then(([p,si,sh,fe,wa,de,me,pr,ha,fi,sb])=>{
 if(p&&p.length){
 const fixed=p.map(x=>{
-const cur=Number(x.cur||x.current||0);
-const kg=Number(x.kg||x.weight||0);
+const cur=["P05","P09","P10"].includes(x.id)?0:Number(x.current||x.cur||0);
+const kg=["P05","P09","P10"].includes(x.id)?0:Number(x.weight||x.kg||0);
 const cap=Number(x.cap||x.capacity||0);
 const init=POOLS.find(q=>q.id===x.id);
 const st=init?init.st:(x.st||x.status||"normal");
