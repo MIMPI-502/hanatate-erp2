@@ -81,9 +81,13 @@ const bom="\uFEFF";
 const csv=bom+header+"\n"+body;
 const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
 if(isIOS){
-const w=window.open();
-w.document.write("<pre style='white-space:pre-wrap;word-break:break-all;font-size:12px;'>"+csv.replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</pre>");
-w.document.title=filename;
+const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+const url=URL.createObjectURL(blob);
+const a=document.createElement("a");
+a.href=url;a.download=filename;
+document.body.appendChild(a);a.click();
+document.body.removeChild(a);
+setTimeout(()=>URL.revokeObjectURL(url),3000);
 } else {
 const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
 const a=document.createElement("a");
