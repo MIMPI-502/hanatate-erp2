@@ -80,18 +80,20 @@ const body=rows.map(r=>cols.map(c=>{const v=c.r?c.r(r):(r[c.k]??"");return `"${S
 const bom="\uFEFF";
 const csv=bom+header+"\n"+body;
 const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent);
-const a=document.createElement("a");
 if(isIOS){
-a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+const w=window.open();
+w.document.write("<pre style='white-space:pre-wrap;word-break:break-all;font-size:12px;'>"+csv.replace(/&/g,"&amp;").replace(/</g,"&lt;")+"</pre>");
+w.document.title=filename;
 } else {
 const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+const a=document.createElement("a");
 a.href=URL.createObjectURL(blob);
-setTimeout(()=>URL.revokeObjectURL(a.href),2000);
-}
 a.download=filename;
 document.body.appendChild(a);
 a.click();
 document.body.removeChild(a);
+setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
 };
 const dlExcel=(filename,cols,rows,sheetName="データ")=>{
 const header=cols.map(c=>c.l);
