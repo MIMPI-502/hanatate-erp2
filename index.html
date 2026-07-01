@@ -381,6 +381,56 @@ action={<input type="month" value={mon} onChange={e=>setMon(e.target.value)} cla
 </div>;
 };
 const NAV=[["dashboard","📊","ダッシュボード"],["stock","","池入れ・在鰻"],["shipping","📦","出荷"],["feeding","🌾","給餌"],["processing","🏭","加工"],["water","💧","水質"],["deaths","📉","死鰻"],["medicine","💊","薬品"],["haccp","✅","HACCP"],["permit","📋","許可枠"],["audit","🔍","監査"]];
+
+// ── ログイン認証 ──
+// パスワードは平文で保存せず、SHA-256ハッシュのみをコードに含めています。
+// パスワードを変更する場合は、ブラウザのコンソールで以下を実行して得られる
+// ハッシュ値を PASSWORD_HASH に置き換えてください:
+//   crypto.subtle.digest("SHA-256",new TextEncoder().encode("新しいパスワード")).then(b=>console.log(Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")))
+const PASSWORD_HASH="827625c6bf7c4336d5b3fb787117e392443c49ae7c8618a6bf68bead3443722f";
+const SESSION_KEY="erp2_auth";
+async function sha256(text){
+const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(text));
+return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+function LoginScreen({onLogin}){
+const [pw,setPw]=useState("");
+const [err,setErr]=useState(false);
+const [checking,setChecking]=useState(false);
+const tryLogin=async()=>{
+if(checking)return;
+setChecking(true);
+const h=await sha256(pw);
+if(h===PASSWORD_HASH){
+sessionStorage.setItem(SESSION_KEY,h);
+onLogin();
+}else{
+setErr(true);
+setTimeout(()=>setErr(false),2000);
+}
+setChecking(false);
+};
+return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"#0a0f0d",padding:20}}>
+<div style={{width:"100%",maxWidth:340}}>
+<div style={{background:"#111a15",border:"1px solid #1e3326",borderRadius:16,padding:"28px 24px",textAlign:"center",marginBottom:16}}>
+<div style={{color:"#2ecc71",fontSize:22,fontWeight:800,marginBottom:4}}>花立山養鰻</div>
+<div style={{color:"#7aa885",fontSize:12}}>統合ERPシステム v2</div>
+</div>
+<div style={{background:"#162019",border:"1px solid #1e3326",borderRadius:16,padding:24}}>
+<div style={{fontSize:13,color:"#7aa885",marginBottom:10}}>パスワードを入力してください</div>
+<input type="password" value={pw} onChange={e=>setPw(e.target.value)} onKeyDown={e=>e.key==="Enter"&&tryLogin()} placeholder="パスワード" className="inp" style={{marginBottom:8,borderColor:err?"#e74c3c":"#1e3326"}}/>
+{err&&<div style={{color:"#e74c3c",fontSize:12,marginBottom:8}}>パスワードが正しくありません</div>}
+<button onClick={tryLogin} disabled={checking} className="btn btn-p" style={{width:"100%",padding:"13px 0",fontSize:15}}>{checking?"確認中...":"ログイン"}</button>
+</div>
+</div>
+</div>;
+}
+const AuthGate=({children})=>{
+const [authed,setAuthed]=useState(sessionStorage.getItem(SESSION_KEY)===PASSWORD_HASH);
+if(!authed)return <LoginScreen onLogin={()=>setAuthed(true)}/>;
+return children;
+};
+
 const App=()=>{
 const [pg,setPg]=useState("dashboard");
 const [loading,setLoading]=useState(true);
@@ -523,6 +573,7 @@ return <div>
 {NAV.map(([id,ic,lb])=>(
 <button key={id} className={`nav-btn${pg===id?" on":""}`} onClick={()=>setPg(id)}><span>{ic}</span>{lb}</button>
 ))}
+<button className="nav-btn" onClick={()=>{sessionStorage.removeItem(SESSION_KEY);location.reload();}} style={{color:"#e74c3c",marginTop:8,borderTop:"1px solid #1e3326",paddingTop:12}}><span>🚪</span>ログアウト</button>
 </nav>
 </div>
 <div className="main">{pages[pg]||pages.dashboard}</div>
@@ -533,7 +584,7 @@ return <div>
 </div>
 </div>;
 };
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+ReactDOM.createRoot(document.getElementById("root")).render(<AuthGate><App/></AuthGate>);
 </script>
 <script>WD=window.__del=function(t,id,fn){var S=window.__SB,H=window.__H;if(!S)return;if(!window.confirm("削除しますか？"))return;fetch(S+"/rest/v1/"+t</script>
 <script>WD=window.__del=function(t,id,fn){var S=window.__SB,H=window.__H;if(!S)return;if(!window.confirm("削除しますか？"))return;fetch(S+"/rest/v1/"+t+"?id=eq."+encodeURIComponent(id),{method:"DELETE",headers:H}).then(function(r){if(r.ok&&fn)fn(function(p){return p.filter(function(x){return x.id!==id;});});});};</script>
